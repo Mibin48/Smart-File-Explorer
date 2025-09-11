@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        /* Header styles */
+        .header {
+            background-color: #007BFF; /* Bootstrap primary color */
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Container for books */
+        #booksContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto; /* Center the container */
+        }
+
+        /* Book card styles */
+        .book-card {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+            position: relative;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .book-card img {
+            width: 100%;
+            height: 300px; /* Fixed height for uniformity */
+            object-fit: cover; /* Cover the area without distortion */
+        }
+
+        .book-card h3 {
+            margin: 10px 0;
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        .book-card p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .book-card button {
+            background-color: #007BFF; /* Bootstrap primary color */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .book-card button:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+
+        /* Modal styles */
+        #bookDetails {
+            display: none; /* Initially hide the details */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 300px; /* Set a width for the modal */
+        }
+
+        #bookDetails .close {
+            cursor: pointer;
+            float: right;
+            font-size: 20px;
+            color: #aaa;
+        }
+
+        #bookDetails .close:hover {
+            color: black;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            #booksContainer {
+                grid-template-columns: 1fr; /* Single column on small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Available Books</h1>
+    </div>
+
+    <div id="booksContainer">
+        <div class="book-card" data-title="Introduction to Algorithms" data-author="Thomas H. Cormen" data-description="A comprehensive introduction to algorithms.">
+            <img src="book1.webp" alt="Introduction to Algorithms">
+            <h3>Introduction to Algorithms</h3>
+            <p>Author: Thomas H. Cormen</p>
+            <button onclick="showDetails('Introduction to Algorithms', 'Thomas H. Cormen', 'A comprehensive introduction to algorithms.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Design Patterns" data-author="Erich Gamma" data-description="A guide to software design patterns.">
+            <img src="book3.png" alt="Design Patterns">
+            <h3>Design Patterns</h3>
+            <p>Author: Erich Gamma</p>
+            <button onclick="showDetails('Design Patterns', 'Erich Gamma', 'A guide to software design patterns.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Artificial Neural Networks" data-author="Yegnanarayana, B" data-description="An introduction to artificial neural networks.">
+            <img src="book5.jpg" alt="Artificial Neural Networks">
+            <h3>Artificial Neural Networks</h3>
+            <p>Author: Yegnanarayana, B</p>
+            <button onclick="showDetails('Artificial Neural Networks', 'Yegnanarayana, B', 'An introduction to artificial neural networks.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Operating Systems" data-author="Max Rock" data-description="An overview of operating system concepts.">
+            <img src="book4.jpg" alt="Operating Systems">
+            <h3>Operating Systems</h3>
+            <p>Author: Max Rock</p>
+            <button onclick="showDetails('Operating Systems', 'Max Rock', 'An overview of operating system concepts.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Programming with C++" data-author="Juneja, B.L; Seth, Anita" data-description="A comprehensive guide to C++.">
+            <img src="book6.jpg" alt="Programming with C++">
+            <h3>Programming with C++</h3>
+            <p>Author: Juneja, B.L; Seth, Anita</p>
+            <button onclick="showDetails('Programming with C++', 'Juneja, B.L; Seth, Anita', 'A comprehensive guide to C++.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Clean Code" data-author="Robert C. Martin" data-description="A Handbook of Agile Software Craftsmanship.">
+            <img src="book2.jpg" alt="Clean Code">
+            <h3>Clean Code</h3>
+            <p>Author: Robert C. Martin</p>
+            <button onclick="showDetails('Clean Code', 'Robert C. Martin', 'A Handbook of Agile Software Craftsmanship.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="The Pragmatic Programmer" data-author="Andrew Hunt and David Thomas" data-description="Tips and techniques for software developers.">
+            <img src="book7.jpeg" alt="The Pragmatic Programmer">
+            <h3>The Pragmatic Programmer</h3>
+            <p>Author: Andrew Hunt and David Thomas</p>
+            <button onclick="showDetails('The Pragmatic Programmer', 'Andrew Hunt and David Thomas', 'Tips and techniques for software developers.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Introduction to the Theory of Computation" data-author="Michael Sipser" data-description="A comprehensive introduction to the theory of computation.">
+            <img src="book8.jpeg" alt="Introduction to the Theory of Computation">
+            <h3>Introduction to the Theory of Computation</h3>
+            <p>Author: Michael Sipser</p>
+            <button onclick="showDetails('Introduction to the Theory of Computation', 'Michael Sipser', 'A comprehensive introduction to the theory of computation.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Artificial Intelligence: A Modern Approach" data-author="Stuart Russell and Peter Norvig" data-description="A comprehensive introduction to AI concepts and techniques.">
+            <img src="book9.webp" alt="Artificial Intelligence: A Modern Approach">
+            <h3>Artificial Intelligence: A Modern Approach</h3>
+            <p>Author: Stuart Russell and Peter Norvig</p>
+            <button onclick="showDetails('Artificial Intelligence: A Modern Approach', 'Stuart Russell and Peter Norvig', 'A comprehensive introduction to AI concepts and techniques.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="The Art of Computer Programming" data-author="Donald E. Knuth" data-description="A multi-volume work on algorithms and programming techniques.">
+            <img src="book10.jpg" alt="The Art of Computer Programming">
+            <h3>The Art of Computer Programming</h3>
+            <p>Author: Donald E. Knuth</p>
+            <button onclick="showDetails('The Art of Computer Programming', 'Donald E. Knuth', 'A multi-volume work on algorithms and programming techniques.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Code Complete" data-author="Steve McConnell" data-description="A practical guide to software construction.">
+            <img src="book11.jpg" alt="Code Complete">
+            <h3>Code Complete</h3>
+            <p>Author: Steve McConnell</p>
+            <button onclick="showDetails('Code Complete', 'Steve McConnell', 'A practical guide to software construction.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Structure and Interpretation of Computer Programs" data-author="Abraham Silberschatz, Peter B. Galvin, and Greg Gagne" data-description="An introduction to programming using Scheme.">
+            <img src="book12.jpg" alt="Structure and Interpretation of Computer Programs">
+            <h3>Structure and Interpretation of Computer Programs</h3>
+            <p>Author: Abraham Silberschatz, Peter B. Galvin, and Greg Gagne</p>
+            <button onclick="showDetails('Structure and Interpretation of Computer Programs', 'Abraham Silberschatz, Peter B. Galvin, and Greg Gagne', 'An introduction to programming using Scheme.')">View Details</button>
+        </div>
+
+        <div class="book-card" data-title="Computer Networking: A Top-Down Approach" data-author="James Kurose and Keith Ross" data-description="An introduction to networking concepts and protocols.">
+            <img src="book13.jpg" alt="Computer Networking: A Top-Down Approach">
+            <h3>Computer Networking: A Top-Down Approach</h3>
+            <p>Author: James Kurose and Keith Ross</p>
+            <button onclick="showDetails('Computer Networking: A Top-Down Approach', 'James Kurose and Keith Ross', 'An introduction to networking concepts and protocols.')">View Details</button>
+        </div>
+    </div>
+
+    <div id="bookDetails">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="detailsTitle"></h2>
+        <p><strong>Author:</strong> <span id="detailsAuthor"></span></p>
+        <p><strong>Description:</strong> <span id="detailsDescription"></span></p>

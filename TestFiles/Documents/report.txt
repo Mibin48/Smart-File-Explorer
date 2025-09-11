@@ -1,0 +1,5 @@
+Name             Hours Worked     Total Wage     
+Ram              32               16000          
+Kirsh            24               21600          
+Rahul            85               20400          
+Krsna            96               72000          

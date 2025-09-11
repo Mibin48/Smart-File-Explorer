@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+    <title>Library Catalog</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <link rel="shortcut icon" href="/opac-tmpl/bootstrap/images/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="/opac-tmpl/bootstrap/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="/opac-tmpl/bootstrap/css/opac.css" />
+    <link rel="stylesheet" type="text/css" href="/opac-tmpl/bootstrap/css/colors.css" />
+    <link rel="stylesheet" type="text/css" media="print" href="/opac-tmpl/bootstrap/css/print.css" />
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .header {
+            background-color: #007BFF; /* Bootstrap primary color */
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .main {
+            padding: 20px;
+        }
+
+        .breadcrumb {
+            background-color: transparent;
+            padding: 10px 0;
+        }
+
+        #navigation {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #navigation a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        #navigation a:hover {
+            text-decoration: underline;
+        }
+
+        #opacmainuserblock {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        #login {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #opaccredits {
+            text-align: center;
+            padding: 20px;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body id="opac-main">
+<div id="wrap">
+    <div id="header-region">
+        <div class="navbar navbar-inverse navbar-static-top">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <h1 id="logo">
+                        <a class="brand" href="/cgi-bin/koha/opac-main.pl">Library Catalog</a>
+                    </h1>
+                    <ul class="nav pull-right">
+                        <li><a href="/cgi-bin/koha/opac-user.pl" class="loginModal-trigger" role="button" data-toggle="modal">Log in to your account</a></li>
+                    </ul>
+                </div> <!-- /container-fluid -->
+            </div> <!-- /navbar-inner -->
+        </div> <!-- /navbar -->
+    </div> <!-- / header-region -->
+
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="main">
+                <ul class="breadcrumb">
+                    <li><a href="#">Home</a></li>
+                </ul>
+
+                <div id="notloggedin" class="container-fluid">
+                    <div class="row-fluid">
+                        <div class="span2">
+                            <div id="navigation">
+                                <h4>Important Links</h4>
+                                <ul>
+                                    <li><a href="http://nptel.ac.in">NPTEL</a></li>
+                                    <li><a href="http://ieeexplore.ieee.org/Xplore/home.jsp">IEEE Online</a></li>
+                                    <li><a href="http://link.springer.com/">Springer E-Journals</a></li>
+                                    <li><a href="http://www.sciencedirect.com">Science Direct E-Journal</a></li>
+                                    <li><a href="http://mcgrawhilleducation.pdn.ipublishcentral.com/bookshelf">McGraw-Hill E-Books</a></li>
+                                    <li><a href="http://ocw.mit.edu/index.htm">MIT Open Courseware</a></li>
+                                    <li><a href="https://www.coursera.org/">Coursera</a></li>
+                                    <li><a href="https://asmedigitalcollection.asme.org/">ASME E-Journals</a></li>
+                                    <li><a href="https://ascelibrary.org/">ASCE E-Journals</a></li>
+                                    <li><a href="https://elibrary.in.pearson.com/">Pearson E-Books</a></li>
+                                    <li><a href="http://www.videeya.com/">Videeya E-Books</a></li>
+                                    <li><a href="http://nlist.inflibnet.ac.in/">N-LIST</a></li>
+                                    <li><a href="https://ndl.iitkgp.ac.in/">NDL</a></li>
+                                    <li><a href="http://mace.new.knimbus.com/">Knimbus E Books and Journals</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="span7">
+                            <div id="opacmainuserblock">Welcome to the Library Catalog
+                                <hr>
+                            </div>
+                        </div> <!-- / .span7 -->
+
+                        <div class="span3">
+                            <div id="login">
+                                <form action="/cgi-bin/koha/opac-user.pl" method="post" name="auth" id="auth">
+                                    <fieldset class="brief">
+                                        <legend>Log in to your account:</legend>
+                                        <label for="userid">Login:</label><input type="text" id="userid" name="userid" />
+                                        <label for="password">Password:</label><input type="password" id="password" name="password" />
+                                        <fieldset class="action">
+                                            <input type="submit" value="Log in" class="btn btn-primary" />
+                                        </fieldset>
+                                    </fieldset>
+                                </form>
+                            </div> <!-- /#login -->
+                        </div> <!-- / .span3 -->
+                    </div> <!-- /.row-fluid -->
+                </div> <!-- /.container-fluid -->
+            </div> <!-- /.main -->
+        </div> <!-- / .row-fluid -->
+    </div> <!-- /.container-fluid -->
+
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="span12">
+                <div id="opaccredits">
+                    Library Catalog
+                </div>
+            </div>
+        </div>
+    </div>
+</div> <!-- / #wrap -->
+
+<!-- JavaScript includes -->
+<script type="text/javascript" src="/opac-tmpl/bootstrap/lib/jquery/jquery.js"></script>
+<script type="text/javascript" src="/opac-tmpl/bootstrap/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/opac-tmpl/bootstrap/js/global.js"></script>
+</body>
+</html>

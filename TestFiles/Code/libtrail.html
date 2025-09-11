@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <style>
+        body {
+            display: flex; /* Use flexbox for layout */
+        }
+
+        /* Sidebar styles */
+        #sidebar {
+            width: 200px; /* Fixed width for sidebar */
+            background-color: #f4f4f4; /* Light background for sidebar */
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #sidebar h2 {
+            text-align: center;
+        }
+
+        #sidebar a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+            margin: 5px 0;
+            border-radius: 5px; /* Rounded corners for links */
+            transition: background-color 0.3s;
+        }
+
+        #sidebar a:hover {
+            background-color: #ddd; /* Change background on hover */
+        }
+
+        /* Main content styles */
+        #mainContent {
+            flex: 1; /* Take remaining space */
+            padding: 20px;
+        }
+
+        .book {
+            display: inline-block;
+            text-align: center;
+            margin: 20px;
+            cursor: pointer; /* Add pointer cursor for clickable books */
+            border-radius: 10px; /* Rounded edges for books */
+            overflow: hidden; /* Ensure image fits within rounded corners */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+        }
+
+        .book img {
+            max-width: 150px;
+            height: auto;
+        }
+
+        #bookDetails {
+            display: none; /* Initially hide the details */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        #bookDetails button {
+            margin-top: 10px;
+        }
+
+        #searchBar {
+            width: 90%;
+            padding: 10px;
+            margin: 10px;
+        }
+
+        #noMatches {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: red;
+        }
+
+        .centered {
+            text-align: center;
+            position: relative;
+        }
+
+        .centered::after {
+            content: '';
+            display: block;
+            width: 50%; /* Adjust width as needed */
+            height: 2px; /* Thickness of the underline */
+            background: black; /* Color of the underline */
+            margin: 0 auto; /* Center the underline */
+            position: absolute;
+            bottom: -5px; /* Adjust position below the text */
+            left: 0;
+            right: 0;
+        }
+    </style>
+   <!-- <h1 class="centered">Welcome to the Department Library</h1> -->
+</head>
+<body>
+    <div id="sidebar">
+        <h2>Menu</h2>
+        <a href="aboutus.html">About Us</a>
+        <a href="cata.html">Catalogs</a>
+        <a href="lib1.html">Available Books</a>
+    </div>
+
+    <div id="mainContent">
+        <input type="text" id="searchBar" placeholder="Search books...">
+
+        <div id="booksContainer">
+            <div class="book" data-title="Introduction to Algorithms" data-author="Thomas H.comen" data-description="Description of Book 1.">
+                <img src="book1.webp" alt="Book 1">
+                <p>Introduction to Algorithms</p>
+            </div>
+
+            <div class="book" data-title="Design Patterns" data-author="Erich Gamma" data-description="Description of Book 3.">
+                <img src="book3.png" alt="Book 3">
+                <p>Design Patterns</p>
+            </div>
+            <div class="book" data-title="Artificial neural networks" data-author="Yegnanarayana, B" data-description="Description of Book 5.">
+                <img src="book5.jpg" alt="Book 3">
+                <p>Artificial neural networks</p>
+            </div>
+            <div class="book" data-title="Operating Systems" data-author="Max Rock" data-description="Description of Book 3.">
+                <img src="book4.jpg" alt="Book 3">
+                <p>Operating System Concepts</p>
+            </div>
+            <div class="book" data-title="Programming with C++" data-author="Juneja, B.L; Seth, Anita" data-description="Description of Book 3.">
+                <img src="book6.jpg" alt="Book 3">
+                <p>Programming with C++</p>
+            </div>
+            <div class="book" data-title="Clean Code" data-author="Robert C. Martin" data-description="A Handbook of Agile Software Craftsmanship.">
+                <img src="book2.jpg" alt="Clean Code">
+                <p>Clean Code</p>
+            </div>
+            <div class="book" data-title="The Pragmatic Programmer" data-author="Andrew Hunt and David Thomas" data-description="Tips and techniques for software developers.">
+                <img src="book7.jpeg" alt="The Pragmatic Programmer">
+                <p>The Pragmatic Programmer</p>
+            </div>
+            <div class="book" data-title="Introduction to the Theory of Computation" data-author="Michael Sipser" data-description="A comprehensive introduction to the theory of computation.">
+                <img src="book8.jpeg">
+                <p>Introduction to the Theory of Computation</p>
+            </div>
+            <div class="book" data-title="Artificial Intelligence: A Modern Approach" data-author="Stuart Russell and Peter Norvig" data-description="A comprehensive introduction to AI concepts and techniques.">
+                <img src="book9.webp" alt="Artificial Intelligence: A Modern Approach">
+                <p>Artificial Intelligence: A Modern Approach</p>
+            </div>
+            <div class="book" data-title="The Art of Computer Programming" data-author="Donald E. Knuth" data-description="A multi-volume work on algorithms and programming techniques.">
+                <img src="book10.jpg">
+                <p>The Art of Computer Programming</p>
+            </div>
+
+            <div class="book" data-title="Code Complete" data-author="Steve McConnell" data-description="A practical guide to software construction.">
+                <img src="book11.jpg" alt="Code Complete">
+                <p>Code Complete</p>
+            </div>
+
+            <div class="book" data-title="Structure and Interpretation of Computer Programs" data-author="Abraham Silberschatz, Peter B. Galvin, and Greg Gagne" data-description="An introduction to programming using Scheme.">
+                <img src="book12.jpg">
+                <p>Structure and Interpretation of Computer Programs</p>
+            </div>
+
+            <div class="book" data-title="Computer Networking: A Top-Down Approach" data-author="James Kurose and Keith Ross" data-description="An introduction to networking concepts and protocols.">
+                <img src="book13.jpg">
+                <p>Computer Networking: A Top-Down Approach</p>
+            </div>
+        </div>
+
+        <div id="bookDetails">
+            <h2 id="detailsTitle"></h2>
+            <p><strong>Author:</strong> <span id="detailsAuthor"></span></p>
+            <p><strong>Description:</strong> <span id="detailsDescription"></span></p>
+            <button onclick="document.getElementById('bookDetails').style.display = 'none';">Close</button>
+        </div>
+        <div id="noMatches">No matching books found.</div>
+    </div>
+
+    <script>
+        const books = document.querySelectorAll('.book');
+        const searchBar = document.getElementById('searchBar');
+        const booksContainer = document.getElementById('booksContainer');
+        const noMatches = document.getElementById('noMatches');
+
+        books.forEach(book => {
+            book.addEventListener('click', () => {
+                const title = book.dataset.title;
+                const author = book.dataset.author;
+                const description = book.dataset.description;
+
+                document.getElementById('detailsTitle').textContent = title;
+                document.getElementById('detailsAuthor').textContent = author;
+                document.getElementById('detailsDescription').textContent = description;
+                document.getElementById('bookDetails').style.display = 'block';
+            });
+        });
+
+        searchBar.addEventListener('input', () => {
+            const searchTerm = searchBar.value.toLowerCase();
+            let matchesFound = false;
+
+            books.forEach(book => {
+                const title = book.dataset.title.toLowerCase();
+                if(title.includes(searchTerm)){
+                    book.style.display = 'inline-block';
+                    matchesFound = true;
+                } else {
+                    book.style.display = 'none';
+                }
+            });
+            if (matchesFound) {
+                noMatches.style.display = 'none';
+            } else {
+                noMatches.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

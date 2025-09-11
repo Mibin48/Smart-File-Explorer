@@ -1,0 +1,22 @@
+h1{
+    color: #497D74;
+    text-align: center;
+    text-decoration: green wavy underline;
+}
+p{
+    color: #EFE9D5;
+    text-align: start;
+    font-family: verdana;
+    font-size: 20px;
+}
+button{
+    size: 5cm;
+    color:#000000;
+    background-color:#71BBB2;
+}
+body{
+    background-color: #27445D;
+}
+form{
+    align-self: center;
+}
