@@ -64,8 +64,22 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
           children: testFilesChildren,
         },
         {
+          name: '☁️ OneDrive',
+          path: userDirectories.oneDrive,
+          isDirectory: true,
+          expanded: false,
+          childrenLoaded: false,
+        },
+        {
           name: '🏠 Home Directory',
           path: userDirectories.home,
+          isDirectory: true,
+          expanded: false,
+          childrenLoaded: false,
+        },
+        {
+          name: '💿 Local Disk (C:)',
+          path: 'C:\\',
           isDirectory: true,
           expanded: false,
           childrenLoaded: false,

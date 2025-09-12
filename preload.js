@@ -24,4 +24,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   getUserHome: () => ipcRenderer.invoke('get-user-home'),
   getAppPath: () => ipcRenderer.invoke('get-app-path'),
+  getDrives: () => ipcRenderer.invoke('get-drives'),
 });

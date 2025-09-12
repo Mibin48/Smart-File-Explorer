@@ -677,6 +677,37 @@ ipcMain.handle('get-app-path', async () => {
   return __dirname;
 });
 
+// Get available drives (Windows)
+ipcMain.handle('get-drives', async () => {
+  try {
+    const drives = [];
+    // Check common drive letters
+    const possibleDrives = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+    
+    for (const letter of possibleDrives) {
+      const drivePath = `${letter}:\\`;
+      try {
+        // Try to access the drive to see if it exists
+        const stats = await fs.stat(drivePath);
+        if (stats.isDirectory()) {
+          drives.push({
+            letter,
+            path: drivePath,
+            label: letter === 'C' ? 'Local Disk' : 'Drive'
+          });
+        }
+      } catch (err) {
+        // Drive doesn't exist or is not accessible, skip it
+      }
+    }
+    
+    return drives;
+  } catch (err) {
+    console.error('Failed to get drives:', err);
+    return [{ letter: 'C', path: 'C:\\', label: 'Local Disk' }]; // Fallback to C: drive
+  }
+});
+
 // Bookmark management
 const bookmarksFilePath = path.join(userHome, '.smart-file-explorer-bookmarks.json');
 
