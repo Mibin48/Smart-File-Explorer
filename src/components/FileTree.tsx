@@ -20,39 +20,75 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
   useEffect(() => {
     if (!userDirectories) return;
     
-    // Initialize with user's actual directories
+    // Initialize with user's actual directories - Test Files first for easy demo
     const initialTree: TreeNode[] = [
       {
-        name: 'Test Files (Demo)',
+        name: '🎆 Demo Files',
         path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles',
         isDirectory: true,
         expanded: true,
         children: [
           {
-            name: 'Documents',
+            name: '📄 Documents',
             path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Documents',
             isDirectory: true,
             expanded: false,
           },
           {
-            name: 'Images',
+            name: '🖼️ Images',
             path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Images',
             isDirectory: true,
             expanded: false,
           },
           {
-            name: 'Videos',
+            name: '🎵 Audio',
+            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Audio',
+            isDirectory: true,
+            expanded: false,
+          },
+          {
+            name: '💻 Code',
+            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Code',
+            isDirectory: true,
+            expanded: false,
+          },
+          {
+            name: '📊 Presentations',
+            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Presentations',
+            isDirectory: true,
+            expanded: false,
+          },
+          {
+            name: '📹 Videos',
             path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Videos',
             isDirectory: true,
             expanded: false,
           },
           {
-            name: 'Code',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Code',
+            name: '📈 Spreadsheets',
+            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Spreadsheets',
+            isDirectory: true,
+            expanded: false,
+          },
+          {
+            name: '📦 Archives',
+            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Archives',
+            isDirectory: true,
+            expanded: false,
+          },
+          {
+            name: '🗂️ Temporary',
+            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Temporary',
             isDirectory: true,
             expanded: false,
           },
         ],
+      },
+      {
+        name: 'System Directories',
+        path: 'separator2', 
+        isDirectory: false,
+        expanded: false,
       },
       {
         name: 'Desktop',
@@ -153,6 +189,10 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
   }, [userDirectories]);
 
   const toggleNode = (node: TreeNode) => {
+    // Skip separators
+    if (node.path.startsWith('separator')) {
+      return;
+    }
     if (node.isDirectory) {
       node.expanded = !node.expanded;
       setTreeData([...treeData]);
@@ -162,24 +202,27 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
 
   const renderNode = (node: TreeNode, level: number = 0): JSX.Element => {
     const paddingLeft = level * 20;
+    const isSeparator = node.path.startsWith('separator');
 
     return (
       <div key={node.path}>
         <div
-          className={`flex items-center py-2 px-3 cursor-pointer rounded transition-colors ${
-            currentPath === node.path 
-              ? 'bg-blue-100 text-blue-700 border-l-3 border-blue-500 shadow-sm' 
-              : 'hover:bg-gray-100 hover:shadow-sm'
+          className={`flex items-center py-2 px-3 rounded-md transition-all duration-200 ${
+            isSeparator
+              ? 'cursor-default text-gray-400 text-xs font-medium border-b border-gray-200 mb-1 bg-transparent'
+              : currentPath === node.path 
+              ? 'bg-blue-500 text-white shadow-md cursor-pointer transform scale-[1.02]' 
+              : 'hover:bg-white hover:shadow-sm cursor-pointer text-gray-700 hover:text-gray-900'
           }`}
-          style={{ paddingLeft: `${paddingLeft + 8}px` }}
-          onClick={() => toggleNode(node)}
-          title={`Click to select: ${node.path}`}
+          style={{ paddingLeft: `${paddingLeft + 12}px`, marginLeft: `${level * 4}px` }}
+          onClick={() => !isSeparator && toggleNode(node)}
+          title={isSeparator ? '' : `Click to select: ${node.path}`}
         >
-          {node.isDirectory ? (
+          {!isSeparator && node.isDirectory ? (
             <svg
-              className={`w-4 h-4 mr-2 transition-transform ${
+              className={`w-4 h-4 mr-3 transition-transform duration-200 ${
                 node.expanded ? 'rotate-90' : ''
-              }`}
+              } ${currentPath === node.path ? 'text-white' : 'text-gray-500'}`}
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -189,16 +232,18 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
                 clipRule="evenodd"
               />
             </svg>
-          ) : (
-            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          ) : !isSeparator ? (
+            <svg className={`w-4 h-4 mr-3 ${currentPath === node.path ? 'text-white' : 'text-gray-500'}`} fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
                 clipRule="evenodd"
               />
             </svg>
-          )}
-          <span className="text-sm truncate">{node.name}</span>
+          ) : null}
+          <span className={`text-sm font-medium truncate ${
+            currentPath === node.path ? 'text-white' : isSeparator ? 'text-gray-400' : 'text-gray-700'
+          }`}>{node.name}</span>
         </div>
         {node.expanded && node.children && (
           <div>
@@ -210,16 +255,16 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 flex-shrink-0">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-600 mb-2">STEP 1: SELECT DIRECTORY</h3>
-          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-            👉 Click on any directory below to select it for AI search
-          </div>
-        </div>
+    <div className="h-full flex flex-col bg-gray-50">
+      <div className="p-3 flex-shrink-0 bg-white border-b border-gray-200">
+        <h3 className="text-sm font-medium text-gray-700 flex items-center">
+          <svg className="w-4 h-4 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+          </svg>
+          Directories
+        </h3>
       </div>
-      <div className="flex-1 scrollbar-thin px-4 pb-4" style={{ overflowY: 'auto' }}>
+      <div className="flex-1 overflow-y-auto p-2">
         <div className="space-y-1">
           {treeData.map((node) => renderNode(node))}
         </div>
