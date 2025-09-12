@@ -132,7 +132,7 @@ ipcMain.handle('file-operation', async (event, operation, files, destination) =>
           for (const file of files) {
             const stats = await fs.stat(file);
             if (stats.isDirectory()) {
-              await fs.rmdir(file, { recursive: true });
+              await fs.rm(file, { recursive: true, force: true });
             } else {
               await fs.unlink(file);
             }
