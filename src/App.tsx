@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CommandInput } from './components/CommandInput';
 import { AdvancedCommandInput } from './components/AdvancedCommandInput';
 import { FileTree } from './components/FileTree';
-import { ActionPreview } from './components/ActionPreview';
 import { FileList } from './components/FileList';
 import { FilePreview } from './components/FilePreview';
-import { SmartOrganizationPanel } from './components/SmartOrganizationPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { HelpDialog } from './components/HelpDialog';
 import { useFileSystem } from './hooks/useFileSystem';
@@ -17,7 +15,6 @@ const App: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>('');
   const [userDirectories, setUserDirectories] = useState<any>(null);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [actionPreview, setActionPreview] = useState<string>('');
   const [aiProcessor, setAiProcessor] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchStatus, setSearchStatus] = useState<string>('');
@@ -25,8 +22,6 @@ const App: React.FC = () => {
   const [advancedAIService, setAdvancedAIService] = useState<AdvancedAIService | null>(null);
   const [fileAnalyses, setFileAnalyses] = useState<FileAnalysis[]>([]);
   const [useAdvancedInput, setUseAdvancedInput] = useState(false);
-  const [showOrganizationPanel, setShowOrganizationPanel] = useState(false);
-  const [organizationResults, setOrganizationResults] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [settingsService] = useState(() => getSettingsService());
@@ -85,11 +80,9 @@ const App: React.FC = () => {
     try {
       if (type === 'semantic') {
         setSearchStatus('Performing semantic search...');
-        setActionPreview('🧠 Using AI to understand the meaning of your search...');
         // Semantic search is handled within AdvancedCommandInput
       } else if (type === 'advanced') {
         setSearchStatus('Processing advanced AI command...');
-        setActionPreview('🚀 Using advanced AI to process your request...');
         
         // Check if it's a natural language operation
         const nlKeywords = ['organize', 'find similar', 'duplicate', 'categorize', 'suggest', 'rename', 'move all', 'delete all'];
@@ -110,7 +103,6 @@ const App: React.FC = () => {
     } catch (err) {
       console.error('Advanced command processing failed:', err);
       setSearchStatus('Advanced command processing failed: ' + (err instanceof Error ? err.message : String(err)));
-      setActionPreview('Sorry, I couldn\'t process that advanced command. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -118,7 +110,7 @@ const App: React.FC = () => {
   
   const handleFileAnalysis = (analyses: FileAnalysis[]) => {
     setFileAnalyses(analyses);
-    setActionPreview('📊 File analysis completed! Check the results in the action panel.');
+    // File analysis completed - results would be displayed elsewhere if needed
   };
 
   const handleSettingsChange = (newSettings: AppSettings) => {
@@ -129,61 +121,32 @@ const App: React.FC = () => {
     }
   };
 
-  const handleOrganizationAction = async (action: string, files: string[], destination?: string) => {
-    setIsProcessing(true);
-    setOrganizationResults(`Executing ${action} on ${files.length} files...`);
-    
-    try {
-      // In a real implementation, this would perform actual file operations
-      switch (action) {
-        case 'archive_duplicates':
-          setOrganizationResults(`✅ Would archive ${files.length} duplicate files to ${destination}`);
-          break;
-        case 'create_folder':
-          setOrganizationResults(`✅ Would create folder ${destination} and move ${files.length} files`);
-          break;
-        case 'move':
-          setOrganizationResults(`✅ Would move ${files.length} files to ${destination}`);
-          break;
-        case 'rename':
-          setOrganizationResults(`✅ Would rename ${files.length} files`);
-          break;
-        default:
-          setOrganizationResults(`✅ Would perform ${action} on ${files.length} files`);
-      }
-      
-      setActionPreview(organizationResults);
-    } catch (error) {
-      setOrganizationResults(`❌ Failed to execute ${action}: ${error}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleNaturalLanguageOperation = async (command: string) => {
     if (!advancedAIService) return;
     
     setIsProcessing(true);
-    setActionPreview('🧠 Processing natural language command...');
+    console.log('🧠 Processing natural language command...');
     
     try {
       const availableFiles = files.map(f => f.fullPath);
       const result = await advancedAIService.parseNaturalLanguageOperation(command, availableFiles);
       
-      setActionPreview(`
-        🎯 **Operation**: ${result.operation.toUpperCase()}
-        🤖 **Confidence**: ${Math.round(result.confidence * 100)}%
-        ⚠️ **Safety**: ${result.safetyLevel.toUpperCase()}
-        📝 **Explanation**: ${result.explanation}
-        📁 **Target Files**: ${result.targetFiles.length} files
-      `);
+      // Operation analysis completed
+      console.log('Natural language operation result:', {
+        operation: result.operation,
+        confidence: Math.round(result.confidence * 100),
+        safety: result.safetyLevel,
+        explanation: result.explanation,
+        targetFiles: result.targetFiles.length
+      });
       
-      if (result.confidence > 0.7 && result.safetyLevel !== 'dangerous') {
-        // Auto-execute high-confidence safe operations
-        await handleOrganizationAction(result.operation, result.targetFiles, result.parameters.destination);
-      }
+        // Note: Organization actions have been removed from the UI
+        // if (result.confidence > 0.7 && result.safetyLevel !== 'dangerous') {
+        //   Auto-execute operations would go here
+        // }
     } catch (error) {
-      setActionPreview('❌ Failed to process natural language command');
+      console.error('Failed to process natural language command:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -193,7 +156,6 @@ const App: React.FC = () => {
     setIsProcessing(true);
     setLastSearchCommand(command);
     setSearchStatus('Processing your command...');
-    setActionPreview('Processing your command...');
     
     try {
       let aiCommand: AICommand;
@@ -220,8 +182,7 @@ const App: React.FC = () => {
       
       console.log('AI Command result:', aiCommand);
       
-      // Update preview based on AI response
-      setActionPreview(aiCommand.preview || `Interpreted as: ${aiCommand.type} - ${aiCommand.query}`);
+      console.log('AI Command interpreted:', aiCommand.preview || `Interpreted as: ${aiCommand.type} - ${aiCommand.query}`);
       
       // Execute the command based on its type
       await executeAICommand(aiCommand);
@@ -229,7 +190,6 @@ const App: React.FC = () => {
     } catch (err) {
       console.error('Command processing failed:', err);
       setSearchStatus('Command processing failed: ' + (err instanceof Error ? err.message : String(err)));
-      setActionPreview('Sorry, I couldn\'t process that command. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -261,7 +221,7 @@ const App: React.FC = () => {
           break;
           
         case 'organize':
-          setActionPreview('File organization feature coming soon!');
+          console.log('File organization feature would be executed here');
           break;
           
         case 'delete':
@@ -272,25 +232,24 @@ const App: React.FC = () => {
               await readDirectory(currentPath); // Refresh the file list
             }
           } else {
-            setActionPreview('Please select files to delete first.');
+            console.log('Please select files to delete first.');
           }
           break;
           
         case 'move':
         case 'copy':
-          setActionPreview(`${aiCommand.type} operation requires destination selection - feature coming soon!`);
+          console.log(`${aiCommand.type} operation requires destination selection`);
           break;
           
         case 'preview':
-          setActionPreview('File preview feature coming soon!');
+          console.log('File preview feature would be executed here');
           break;
           
         default:
-          setActionPreview(`Unknown command type: ${aiCommand.type}`);
+          console.log(`Unknown command type: ${aiCommand.type}`);
       }
     } catch (err) {
       console.error('Command execution failed:', err);
-      setActionPreview('Failed to execute command. Please try again.');
     }
   };
 
@@ -298,7 +257,6 @@ const App: React.FC = () => {
     setCurrentPath(newPath);
     // Clear previous search results and status when changing directory
     setSearchStatus('');
-    setActionPreview('');
     setSelectedFiles([]);
     await readDirectory(newPath);
   };
@@ -349,20 +307,6 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
-            <button 
-              onClick={() => setShowOrganizationPanel(!showOrganizationPanel)}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                showOrganizationPanel 
-                  ? 'bg-purple-500 text-white hover:bg-purple-600' 
-                  : useAdvancedInput && advancedAIService
-                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-              disabled={!advancedAIService || !useAdvancedInput}
-              title={!advancedAIService ? 'AI features require OpenAI API key' : !useAdvancedInput ? 'Upgrade to Advanced AI to access Smart Organization' : 'Toggle Smart Organization Panel'}
-            >
-              🧠 Smart AI
-            </button>
             <button 
               onClick={() => setIsSettingsOpen(true)}
               className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -476,29 +420,6 @@ const App: React.FC = () => {
             onFilePreview={handleFilePreview}
             onFolderNavigate={handleFolderNavigation}
           />
-        </div>
-
-        {/* Action Preview / Smart Organization Panel */}
-        <div className="w-80 bg-white border-l overflow-hidden flex flex-col">
-          {showOrganizationPanel ? (
-            <SmartOrganizationPanel
-              files={files.map(f => ({
-                name: f.name,
-                path: f.fullPath,
-                modified: new Date(f.modified),
-                size: parseInt(f.size) || 0,
-                type: f.type
-              }))}
-              aiService={advancedAIService || undefined}
-              onOrganizationAction={handleOrganizationAction}
-            />
-          ) : (
-            <ActionPreview 
-              preview={actionPreview} 
-              currentPath={currentPath} 
-              fileAnalyses={fileAnalyses}
-            />
-          )}
         </div>
       </div>
       

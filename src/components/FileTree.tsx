@@ -12,6 +12,7 @@ interface TreeNode {
   isDirectory: boolean;
   children?: TreeNode[];
   expanded?: boolean;
+  childrenLoaded?: boolean;
 }
 
 export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, userDirectories }) => {
@@ -20,70 +21,42 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
   useEffect(() => {
     if (!userDirectories) return;
     
+    const loadTestFilesChildren = async () => {
+      try {
+        const testFilesPath = 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles';
+        const result = await (window as any).electronAPI.readDir(testFilesPath);
+        if (result && !result.error && Array.isArray(result)) {
+          const subdirectories = result
+            .filter((item: any) => item.isDirectory)
+            .map((dir: any) => ({
+              name: getDirectoryIcon(dir.name) + ' ' + dir.name,
+              path: dir.fullPath,
+              isDirectory: true,
+              expanded: false,
+              childrenLoaded: false,
+              children: undefined
+            }));
+          return subdirectories;
+        }
+      } catch (err) {
+        console.error('Failed to load TestFiles directory:', err);
+      }
+      return [];
+    };
+    
     // Initialize with user's actual directories - Test Files first for easy demo
-    const initialTree: TreeNode[] = [
-      {
-        name: '🎆 Demo Files',
-        path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles',
-        isDirectory: true,
-        expanded: true,
-        children: [
-          {
-            name: '📄 Documents',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Documents',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '🖼️ Images',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Images',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '🎵 Audio',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Audio',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '💻 Code',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Code',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '📊 Presentations',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Presentations',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '📹 Videos',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Videos',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '📈 Spreadsheets',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Spreadsheets',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '📦 Archives',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Archives',
-            isDirectory: true,
-            expanded: false,
-          },
-          {
-            name: '🗂️ Temporary',
-            path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles\\Temporary',
-            isDirectory: true,
-            expanded: false,
-          },
-        ],
-      },
+    const initializeTree = async () => {
+      const testFilesChildren = await loadTestFilesChildren();
+      
+      const initialTree: TreeNode[] = [
+        {
+          name: '🎆 Demo Files',
+          path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles',
+          isDirectory: true,
+          expanded: true,
+          childrenLoaded: true,
+          children: testFilesChildren,
+        },
       {
         name: 'System Directories',
         path: 'separator2', 
@@ -95,66 +68,77 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
         path: userDirectories.desktop,
         isDirectory: true,
         expanded: false,
+        childrenLoaded: false,
       },
       {
         name: 'Documents',
         path: userDirectories.documents,
         isDirectory: true,
         expanded: false,
+        childrenLoaded: false,
       },
       {
         name: 'Downloads',
         path: userDirectories.downloads,
         isDirectory: true,
         expanded: false,
+        childrenLoaded: false,
       },
       {
         name: 'OneDrive',
         path: userDirectories.oneDrive,
         isDirectory: true,
         expanded: false,
+        childrenLoaded: false,
       },
       {
         name: 'Pictures',
         path: userDirectories.pictures,
         isDirectory: true,
         expanded: false,
+        childrenLoaded: false,
       },
       {
         name: 'Videos',
         path: userDirectories.videos,
         isDirectory: true,
         expanded: false,
+        childrenLoaded: false,
       },
       {
         name: 'Music',
         path: userDirectories.music,
         isDirectory: true,
         expanded: false,
+        childrenLoaded: false,
       },
       {
         name: 'Home Directory',
         path: userDirectories.home,
         isDirectory: true,
         expanded: true,
+        childrenLoaded: true,
         children: [
           {
             name: 'Desktop',
             path: userDirectories.desktop,
             isDirectory: true,
             expanded: false,
+            childrenLoaded: false,
           },
           {
             name: 'Documents',
             path: userDirectories.documents,
             isDirectory: true,
             expanded: false,
+            childrenLoaded: false,
           },
           {
             name: 'Downloads',
             path: userDirectories.downloads,
             isDirectory: true,
             expanded: false,
+            childrenLoaded: false,
           },
         ],
       },
@@ -163,38 +147,88 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
         path: 'C:\\',
         isDirectory: true,
         expanded: false,
+        childrenLoaded: true,
         children: [
           {
             name: 'Program Files',
             path: 'C:\\Program Files',
             isDirectory: true,
             expanded: false,
+            childrenLoaded: false,
           },
           {
             name: 'Users',
             path: 'C:\\Users',
             isDirectory: true,
             expanded: false,
+            childrenLoaded: false,
           },
           {
             name: 'Windows',
             path: 'C:\\Windows',
             isDirectory: true,
             expanded: false,
+            childrenLoaded: false,
           },
         ],
       },
-    ];
-    setTreeData(initialTree);
+      ];
+      setTreeData(initialTree);
+    };
+    
+    initializeTree();
   }, [userDirectories]);
+  
+  // Helper function to get appropriate icons for directory names
+  const getDirectoryIcon = (dirName: string): string => {
+    const name = dirName.toLowerCase();
+    if (name.includes('document')) return '📄';
+    if (name.includes('image')) return '🖼️';
+    if (name.includes('audio')) return '🎵';
+    if (name.includes('code')) return '💻';
+    if (name.includes('presentation')) return '📊';
+    if (name.includes('video')) return '📹';
+    if (name.includes('spreadsheet')) return '📈';
+    if (name.includes('archive')) return '📦';
+    if (name.includes('temp')) return '🗂️';
+    return '📁';
+  };
 
-  const toggleNode = (node: TreeNode) => {
+  const toggleNode = async (node: TreeNode) => {
     // Skip separators
     if (node.path.startsWith('separator')) {
       return;
     }
     if (node.isDirectory) {
       node.expanded = !node.expanded;
+      
+      // If expanding and children haven't been loaded, load them dynamically
+      if (node.expanded && !node.childrenLoaded) {
+        try {
+          const result = await (window as any).electronAPI.readDir(node.path);
+          if (result && !result.error && Array.isArray(result)) {
+            // Filter to only show directories in the tree
+            const subdirectories = result
+              .filter((item: any) => item.isDirectory)
+              .map((dir: any) => ({
+                name: dir.name,
+                path: dir.fullPath,
+                isDirectory: true,
+                expanded: false,
+                childrenLoaded: false,
+                children: undefined
+              }));
+            
+            node.children = subdirectories;
+            node.childrenLoaded = true;
+          }
+        } catch (err) {
+          console.error('Failed to load directory contents:', err);
+          node.children = [];
+          node.childrenLoaded = true;
+        }
+      }
+      
       setTreeData([...treeData]);
       onPathChange(node.path);
     }
