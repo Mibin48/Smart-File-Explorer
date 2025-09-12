@@ -672,6 +672,11 @@ ipcMain.handle('get-user-home', async () => {
   };
 });
 
+// Get application directory path
+ipcMain.handle('get-app-path', async () => {
+  return __dirname;
+});
+
 // Bookmark management
 const bookmarksFilePath = path.join(userHome, '.smart-file-explorer-bookmarks.json');
 

@@ -23,7 +23,9 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
     
     const loadTestFilesChildren = async () => {
       try {
-        const testFilesPath = 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles';
+        // Get dynamic path for cross-computer compatibility
+        const appPath = await (window as any).electronAPI.getAppPath();
+        const testFilesPath = appPath ? `${appPath}\\TestFiles` : 'C:\\TestFiles';
         const result = await (window as any).electronAPI.readDir(testFilesPath);
         if (result && !result.error && Array.isArray(result)) {
           const subdirectories = result
@@ -48,130 +50,26 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
     const initializeTree = async () => {
       const testFilesChildren = await loadTestFilesChildren();
       
+      // Get dynamic path for cross-computer compatibility
+      const appPath = await (window as any).electronAPI.getAppPath();
+      const testFilesPath = appPath ? `${appPath}\\TestFiles` : 'C:\\TestFiles';
+      
       const initialTree: TreeNode[] = [
         {
           name: '🎆 Demo Files',
-          path: 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles',
+          path: testFilesPath,
           isDirectory: true,
           expanded: true,
           childrenLoaded: true,
           children: testFilesChildren,
         },
-      {
-        name: 'System Directories',
-        path: 'separator2', 
-        isDirectory: false,
-        expanded: false,
-      },
-      {
-        name: 'Desktop',
-        path: userDirectories.desktop,
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: false,
-      },
-      {
-        name: 'Documents',
-        path: userDirectories.documents,
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: false,
-      },
-      {
-        name: 'Downloads',
-        path: userDirectories.downloads,
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: false,
-      },
-      {
-        name: 'OneDrive',
-        path: userDirectories.oneDrive,
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: false,
-      },
-      {
-        name: 'Pictures',
-        path: userDirectories.pictures,
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: false,
-      },
-      {
-        name: 'Videos',
-        path: userDirectories.videos,
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: false,
-      },
-      {
-        name: 'Music',
-        path: userDirectories.music,
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: false,
-      },
-      {
-        name: 'Home Directory',
-        path: userDirectories.home,
-        isDirectory: true,
-        expanded: true,
-        childrenLoaded: true,
-        children: [
-          {
-            name: 'Desktop',
-            path: userDirectories.desktop,
-            isDirectory: true,
-            expanded: false,
-            childrenLoaded: false,
-          },
-          {
-            name: 'Documents',
-            path: userDirectories.documents,
-            isDirectory: true,
-            expanded: false,
-            childrenLoaded: false,
-          },
-          {
-            name: 'Downloads',
-            path: userDirectories.downloads,
-            isDirectory: true,
-            expanded: false,
-            childrenLoaded: false,
-          },
-        ],
-      },
-      {
-        name: 'Local Disk (C:)',
-        path: 'C:\\',
-        isDirectory: true,
-        expanded: false,
-        childrenLoaded: true,
-        children: [
-          {
-            name: 'Program Files',
-            path: 'C:\\Program Files',
-            isDirectory: true,
-            expanded: false,
-            childrenLoaded: false,
-          },
-          {
-            name: 'Users',
-            path: 'C:\\Users',
-            isDirectory: true,
-            expanded: false,
-            childrenLoaded: false,
-          },
-          {
-            name: 'Windows',
-            path: 'C:\\Windows',
-            isDirectory: true,
-            expanded: false,
-            childrenLoaded: false,
-          },
-        ],
-      },
+        {
+          name: '🏠 Home Directory',
+          path: userDirectories.home,
+          isDirectory: true,
+          expanded: false,
+          childrenLoaded: false,
+        },
       ];
       setTreeData(initialTree);
     };

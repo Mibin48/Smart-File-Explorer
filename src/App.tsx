@@ -5,6 +5,7 @@ import { FilePreview } from './components/FilePreview';
 import { SettingsPanel } from './components/SettingsPanel';
 import { HelpDialog } from './components/HelpDialog';
 import { NewItemDialog } from './components/NewItemDialog';
+import { BookmarkDialog } from './components/BookmarkDialog';
 import { useFileSystem } from './hooks/useFileSystem';
 import { createCommandProcessor, AICommand } from './commands/aiCommands';
 import { AdvancedAIService, FileAnalysis } from './services/AdvancedAIService';
@@ -26,8 +27,9 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'thumbnail'>('list');
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
-  const [bookmarks, setBookmarks] = useState<{name: string, path: string}[]>([]);
+  const [bookmarks, setBookmarks] = useState<{id: string, name: string, path: string, type: 'folder' | 'file', dateAdded: string}[]>([]);
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [isBookmarkDialogOpen, setIsBookmarkDialogOpen] = useState(false);
   const [settingsService] = useState(() => getSettingsService());
   const [appSettings, setAppSettings] = useState<AppSettings>(settingsService.getSettings());
   const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
@@ -43,8 +45,11 @@ const App: React.FC = () => {
         // Get user directories
         const dirs = await (window as any).electronAPI.getUserHome();
         setUserDirectories(dirs);
-        // Set default to TestFiles directory for demonstration
-        const testFilesPath = 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles';
+        
+        // Set default to TestFiles directory using relative path
+        // This makes the app work on any computer by looking for TestFiles in the app directory
+        const appPath = await (window as any).electronAPI.getAppPath();
+        const testFilesPath = appPath ? `${appPath}\\TestFiles` : dirs?.home || 'C:\\';
         setCurrentPath(testFilesPath);
         
         // Load bookmarks
@@ -333,6 +338,29 @@ const App: React.FC = () => {
     await handlePathChange(folderPath);
   };
 
+  const handleOpenFile = async (filePath: string) => {
+    try {
+      await (window as any).electronAPI.openFile(filePath);
+    } catch (error) {
+      console.error('Failed to open file:', error);
+    }
+  };
+
+  const handleAddBookmark = (name: string, path: string, type: 'folder' | 'file') => {
+    const newBookmark = {
+      id: Date.now().toString(),
+      name,
+      path,
+      type,
+      dateAdded: new Date().toISOString()
+    };
+    
+    // Check if bookmark already exists
+    if (!bookmarks.some(b => b.path === path)) {
+      setBookmarks([...bookmarks, newBookmark]);
+    }
+  };
+
   return (
     <div className="h-screen w-screen flex flex-col bg-white">
       
@@ -509,64 +537,12 @@ const App: React.FC = () => {
                 🖼 Thumbnail
               </button>
             </div>
-            <div className="relative">
-              <button 
-                className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
-                onClick={() => setShowBookmarks(!showBookmarks)}
-              >
-                ⭐ Bookmarks ({bookmarks.length})
-              </button>
-              {showBookmarks && (
-                <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-64 z-50">
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium">Bookmarked Folders</h3>
-                      <button 
-                        className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                        onClick={() => {
-                          if (currentPath) {
-                            const folderName = currentPath.split('\\').pop() || 'Folder';
-                            const newBookmark = { name: folderName, path: currentPath };
-                            if (!bookmarks.some(b => b.path === currentPath)) {
-                              setBookmarks([...bookmarks, newBookmark]);
-                            }
-                          }
-                        }}
-                      >
-                        Add Current
-                      </button>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      {bookmarks.length === 0 ? (
-                        <p className="text-xs text-gray-500 py-2">No bookmarks yet</p>
-                      ) : (
-                        bookmarks.map((bookmark, index) => (
-                          <div key={index} className="flex items-center justify-between py-1 hover:bg-gray-50 rounded px-2">
-                            <button 
-                              className="text-sm text-left flex-1 truncate hover:text-blue-600"
-                              onClick={() => {
-                                handlePathChange(bookmark.path);
-                                setShowBookmarks(false);
-                              }}
-                            >
-                              📁 {bookmark.name}
-                            </button>
-                            <button 
-                              className="text-red-500 hover:text-red-700 text-xs ml-2"
-                              onClick={() => {
-                                setBookmarks(bookmarks.filter((_, i) => i !== index));
-                              }}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <button 
+              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+              onClick={() => setIsBookmarkDialogOpen(true)}
+            >
+              ⭐ Bookmarks ({bookmarks.length})
+            </button>
             <button 
               className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
               onClick={() => setUseAdvancedInput(!useAdvancedInput)}
@@ -669,22 +645,6 @@ const App: React.FC = () => {
               <div className="text-xs text-gray-500 mb-2">Directories</div>
               <FileTree currentPath={currentPath} onPathChange={handlePathChange} userDirectories={userDirectories} />
             </div>
-            
-            <div className="border-t border-gray-200 mt-4">
-              <div className="p-2">
-                <div className="text-xs text-gray-500 mb-2">System Directories</div>
-                <div className="space-y-1">
-                  <button className="flex items-center space-x-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm">
-                    <span>🖥️</span>
-                    <span>Desktop</span>
-                  </button>
-                  <button className="flex items-center space-x-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm">
-                    <span>📁</span>
-                    <span>Documents</span>
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -721,6 +681,7 @@ const App: React.FC = () => {
               onFilePreview={handleFilePreview}
               onFolderNavigate={handleFolderNavigation}
               viewMode={viewMode}
+              onAddBookmark={handleAddBookmark}
             />
           </div>
           
@@ -780,6 +741,17 @@ const App: React.FC = () => {
             readDirectory(currentPath);
           }
         }}
+      />
+      
+      {/* Bookmark Dialog */}
+      <BookmarkDialog
+        isOpen={isBookmarkDialogOpen}
+        onClose={() => setIsBookmarkDialogOpen(false)}
+        bookmarks={bookmarks}
+        onBookmarkUpdate={setBookmarks}
+        onNavigate={handlePathChange}
+        onOpenFile={handleOpenFile}
+        currentPath={currentPath}
       />
     </div>
   );
