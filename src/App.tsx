@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileTree } from './components/FileTree';
 import { FileList } from './components/FileList';
 import { FilePreview } from './components/FilePreview';
@@ -11,34 +11,64 @@ import { createCommandProcessor, AICommand } from './commands/aiCommands';
 import { AdvancedAIService, FileAnalysis } from './services/AdvancedAIService';
 import { getSettingsService, AppSettings } from './services/SettingsService';
 
+// Types
+interface Bookmark {
+  id: string;
+  name: string;
+  path: string;
+  type: 'folder' | 'file';
+  dateAdded: string;
+}
+
+interface UserDirectories {
+  home: string;
+  desktop: string;
+  documents: string;
+  downloads: string;
+  pictures: string;
+  videos: string;
+  music: string;
+  oneDrive: string;
+}
+
 const App: React.FC = () => {
+  // Core state
   const [currentPath, setCurrentPath] = useState<string>('');
-  const [userDirectories, setUserDirectories] = useState<any>(null);
+  const [userDirectories, setUserDirectories] = useState<UserDirectories | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  
+  // Navigation state
+  const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'thumbnail'>('list');
+  
+  // Dialog states
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
+  const [isBookmarkDialogOpen, setIsBookmarkDialogOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
+  
+  // Bookmark state
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  
+  // AI and search state
   const [aiProcessor, setAiProcessor] = useState<any>(null);
+  const [advancedAIService, setAdvancedAIService] = useState<AdvancedAIService | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchStatus, setSearchStatus] = useState<string>('');
   const [lastSearchCommand, setLastSearchCommand] = useState<string>('');
-  const [advancedAIService, setAdvancedAIService] = useState<AdvancedAIService | null>(null);
-  const [fileAnalyses, setFileAnalyses] = useState<FileAnalysis[]>([]);
   const [useAdvancedInput, setUseAdvancedInput] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'thumbnail'>('list');
-  const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
-  const [bookmarks, setBookmarks] = useState<{id: string, name: string, path: string, type: 'folder' | 'file', dateAdded: string}[]>([]);
-  const [showBookmarks, setShowBookmarks] = useState(false);
-  const [isBookmarkDialogOpen, setIsBookmarkDialogOpen] = useState(false);
+  
+  // Settings
   const [settingsService] = useState(() => getSettingsService());
   const [appSettings, setAppSettings] = useState<AppSettings>(settingsService.getSettings());
-  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
 
+  // File system hook
   const { files, loading, error, readDirectory, searchFiles, executeFileOperation } = useFileSystem();
 
-  // Initialize user directories and AI processor
+  // Initialize application
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -46,8 +76,7 @@ const App: React.FC = () => {
         const dirs = await (window as any).electronAPI.getUserHome();
         setUserDirectories(dirs);
         
-        // Set default to TestFiles directory using relative path
-        // This makes the app work on any computer by looking for TestFiles in the app directory
+        // Set default to TestFiles directory using dynamic path
         const appPath = await (window as any).electronAPI.getAppPath();
         const testFilesPath = appPath ? `${appPath}\\TestFiles` : dirs?.home || 'C:\\';
         setCurrentPath(testFilesPath);
@@ -71,10 +100,8 @@ const App: React.FC = () => {
           const processor = createCommandProcessor(apiKey);
           setAiProcessor(processor);
           
-          // Initialize Advanced AI Service but don't enable by default
           const advancedService = new AdvancedAIService(apiKey);
           setAdvancedAIService(advancedService);
-          // Start with basic AI - user can upgrade to advanced
         } catch (err) {
           console.warn('Failed to initialize AI processor:', err);
         }
@@ -91,16 +118,6 @@ const App: React.FC = () => {
     }
   }, [readDirectory, currentPath]);
   
-  // Click outside handler for dropdowns
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowBookmarks(false);
-    };
-    
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-  
   // Save bookmarks whenever they change
   useEffect(() => {
     const saveBookmarks = async () => {
@@ -116,86 +133,74 @@ const App: React.FC = () => {
     }
   }, [bookmarks]);
 
-  const handleAdvancedCommand = async (command: string, type: 'basic' | 'semantic' | 'advanced') => {
-    setIsProcessing(true);
-    setLastSearchCommand(command);
-    
-    try {
-      if (type === 'semantic') {
-        setSearchStatus('Performing semantic search...');
-        // Semantic search is handled within AdvancedCommandInput
-      } else if (type === 'advanced') {
-        setSearchStatus('Processing advanced AI command...');
-        
-        // Check if it's a natural language operation
-        const nlKeywords = ['organize', 'find similar', 'duplicate', 'categorize', 'suggest', 'rename', 'move all', 'delete all'];
-        const isNaturalLanguageOp = nlKeywords.some(keyword => command.toLowerCase().includes(keyword));
-        
-        if (isNaturalLanguageOp) {
-          await handleNaturalLanguageOperation(command);
-        } else {
-          // Advanced commands are handled within AdvancedCommandInput
-        }
-      } else {
-        // Fall back to basic command processing
-        await handleCommand(command);
-        return;
-      }
-      
-      setSearchStatus(`${type.toUpperCase()} command completed: "${command}"`);
-    } catch (err) {
-      console.error('Advanced command processing failed:', err);
-      setSearchStatus('Advanced command processing failed: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsProcessing(false);
+  // Handle path navigation with history
+  const handlePathChange = useCallback(async (newPath: string, updateHistory: boolean = true) => {
+    if (updateHistory && newPath !== currentPath) {
+      const newHistory = [...navigationHistory.slice(0, currentHistoryIndex + 1), newPath];
+      setNavigationHistory(newHistory);
+      setCurrentHistoryIndex(newHistory.length - 1);
     }
-  };
+    
+    setCurrentPath(newPath);
+    setSearchStatus('');
+    setSelectedFiles([]);
+    await readDirectory(newPath);
+  }, [currentPath, navigationHistory, currentHistoryIndex, readDirectory]);
+
+  // Navigation functions
+  const navigateBack = useCallback(() => {
+    if (currentHistoryIndex > 0) {
+      const newIndex = currentHistoryIndex - 1;
+      setCurrentHistoryIndex(newIndex);
+      const targetPath = navigationHistory[newIndex];
+      handlePathChange(targetPath, false);
+    }
+  }, [currentHistoryIndex, navigationHistory, handlePathChange]);
   
-  const handleFileAnalysis = (analyses: FileAnalysis[]) => {
-    setFileAnalyses(analyses);
-    // File analysis completed - results would be displayed elsewhere if needed
-  };
-
-  const handleSettingsChange = (newSettings: AppSettings) => {
-    setAppSettings(newSettings);
-    // Apply settings changes to the app state
-    if (newSettings.ai.enableAdvancedFeatures) {
-      setUseAdvancedInput(true);
+  const navigateForward = useCallback(() => {
+    if (currentHistoryIndex < navigationHistory.length - 1) {
+      const newIndex = currentHistoryIndex + 1;
+      setCurrentHistoryIndex(newIndex);
+      const targetPath = navigationHistory[newIndex];
+      handlePathChange(targetPath, false);
     }
-  };
+  }, [currentHistoryIndex, navigationHistory, handlePathChange]);
 
+  // File operations
+  const handleFilePreview = useCallback((filePath: string) => {
+    setPreviewFilePath(filePath);
+    setIsPreviewOpen(true);
+  }, []);
 
-  const handleNaturalLanguageOperation = async (command: string) => {
-    if (!advancedAIService) return;
-    
-    setIsProcessing(true);
-    console.log('🧠 Processing natural language command...');
-    
+  const handleFolderNavigation = useCallback(async (folderPath: string) => {
+    await handlePathChange(folderPath);
+  }, [handlePathChange]);
+
+  const handleOpenFile = useCallback(async (filePath: string) => {
     try {
-      const availableFiles = files.map(f => f.fullPath);
-      const result = await advancedAIService.parseNaturalLanguageOperation(command, availableFiles);
-      
-      // Operation analysis completed
-      console.log('Natural language operation result:', {
-        operation: result.operation,
-        confidence: Math.round(result.confidence * 100),
-        safety: result.safetyLevel,
-        explanation: result.explanation,
-        targetFiles: result.targetFiles.length
-      });
-      
-        // Note: Organization actions have been removed from the UI
-        // if (result.confidence > 0.7 && result.safetyLevel !== 'dangerous') {
-        //   Auto-execute operations would go here
-        // }
+      await (window as any).electronAPI.openFile(filePath);
     } catch (error) {
-      console.error('Failed to process natural language command:', error);
-    } finally {
-      setIsProcessing(false);
+      console.error('Failed to open file:', error);
     }
-  };
+  }, []);
 
-  const handleCommand = async (command: string) => {
+  // Bookmark operations
+  const handleAddBookmark = useCallback((name: string, path: string, type: 'folder' | 'file') => {
+    const newBookmark: Bookmark = {
+      id: Date.now().toString(),
+      name,
+      path,
+      type,
+      dateAdded: new Date().toISOString()
+    };
+    
+    if (!bookmarks.some(b => b.path === path)) {
+      setBookmarks([...bookmarks, newBookmark]);
+    }
+  }, [bookmarks]);
+
+  // AI command processing
+  const handleCommand = useCallback(async (command: string) => {
     setIsProcessing(true);
     setLastSearchCommand(command);
     setSearchStatus('Processing your command...');
@@ -203,31 +208,20 @@ const App: React.FC = () => {
     try {
       let aiCommand: AICommand;
       
-      console.log('Processing command:', command);
-      
-      // Try to use OpenAI API first, fallback to local processing
       if (aiProcessor) {
         try {
           setSearchStatus('Using OpenAI to understand your command...');
           aiCommand = await aiProcessor.processCommand(command);
-          console.log('OpenAI response:', aiCommand);
         } catch (err) {
           console.warn('OpenAI API failed, using fallback:', err);
           setSearchStatus('OpenAI failed, using local processing...');
-          // Fallback to local processing via Electron main process
           aiCommand = await (window as any).electronAPI.processAICommand(command);
         }
       } else {
         setSearchStatus('Using local AI processing...');
-        // Use local processing via Electron main process
         aiCommand = await (window as any).electronAPI.processAICommand(command);
       }
       
-      console.log('AI Command result:', aiCommand);
-      
-      console.log('AI Command interpreted:', aiCommand.preview || `Interpreted as: ${aiCommand.type} - ${aiCommand.query}`);
-      
-      // Execute the command based on its type
       await executeAICommand(aiCommand);
       
     } catch (err) {
@@ -236,15 +230,14 @@ const App: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
-  
-  const executeAICommand = async (aiCommand: AICommand) => {
+  }, [aiProcessor, currentPath, selectedFiles, readDirectory]);
+
+  const executeAICommand = useCallback(async (aiCommand: AICommand) => {
     try {
       switch (aiCommand.type) {
         case 'search':
           setSearchStatus('Executing search...');
           
-          // Use enhanced search with parameters
           const searchParams = {
             query: aiCommand.query,
             fileTypes: aiCommand.parameters.fileTypes || [],
@@ -253,18 +246,10 @@ const App: React.FC = () => {
             searchTerm: aiCommand.parameters.searchTerm || aiCommand.query
           };
           
-          console.log('Search parameters:', searchParams);
-          console.log('Search path (current directory):', currentPath);
-          
-          // Search in the current directory
           await searchFiles(searchParams, currentPath);
           
           const dirName = currentPath.split('\\').pop() || 'directory';
           setSearchStatus(`Search completed for: "${lastSearchCommand}" in ${dirName}`);
-          break;
-          
-        case 'organize':
-          console.log('File organization feature would be executed here');
           break;
           
         case 'delete':
@@ -272,20 +257,9 @@ const App: React.FC = () => {
             const success = await executeFileOperation('delete', selectedFiles);
             if (success) {
               setSelectedFiles([]);
-              await readDirectory(currentPath); // Refresh the file list
+              await readDirectory(currentPath);
             }
-          } else {
-            console.log('Please select files to delete first.');
           }
-          break;
-          
-        case 'move':
-        case 'copy':
-          console.log(`${aiCommand.type} operation requires destination selection`);
-          break;
-          
-        case 'preview':
-          console.log('File preview feature would be executed here');
           break;
           
         default:
@@ -294,72 +268,15 @@ const App: React.FC = () => {
     } catch (err) {
       console.error('Command execution failed:', err);
     }
-  };
+  }, [currentPath, selectedFiles, searchFiles, executeFileOperation, readDirectory, lastSearchCommand]);
 
-  const handlePathChange = async (newPath: string, updateHistory: boolean = true) => {
-    if (updateHistory && newPath !== currentPath) {
-      // Add to navigation history
-      const newHistory = [...navigationHistory.slice(0, currentHistoryIndex + 1), newPath];
-      setNavigationHistory(newHistory);
-      setCurrentHistoryIndex(newHistory.length - 1);
+  // Settings change handler
+  const handleSettingsChange = useCallback((newSettings: AppSettings) => {
+    setAppSettings(newSettings);
+    if (newSettings.ai.enableAdvancedFeatures) {
+      setUseAdvancedInput(true);
     }
-    
-    setCurrentPath(newPath);
-    // Clear previous search results and status when changing directory
-    setSearchStatus('');
-    setSelectedFiles([]);
-    await readDirectory(newPath);
-  };
-  
-  const navigateBack = () => {
-    if (currentHistoryIndex > 0) {
-      const newIndex = currentHistoryIndex - 1;
-      setCurrentHistoryIndex(newIndex);
-      const targetPath = navigationHistory[newIndex];
-      handlePathChange(targetPath, false);
-    }
-  };
-  
-  const navigateForward = () => {
-    if (currentHistoryIndex < navigationHistory.length - 1) {
-      const newIndex = currentHistoryIndex + 1;
-      setCurrentHistoryIndex(newIndex);
-      const targetPath = navigationHistory[newIndex];
-      handlePathChange(targetPath, false);
-    }
-  };
-
-  const handleFilePreview = (filePath: string) => {
-    setPreviewFilePath(filePath);
-    setIsPreviewOpen(true);
-  };
-
-  const handleFolderNavigation = async (folderPath: string) => {
-    await handlePathChange(folderPath);
-  };
-
-  const handleOpenFile = async (filePath: string) => {
-    try {
-      await (window as any).electronAPI.openFile(filePath);
-    } catch (error) {
-      console.error('Failed to open file:', error);
-    }
-  };
-
-  const handleAddBookmark = (name: string, path: string, type: 'folder' | 'file') => {
-    const newBookmark = {
-      id: Date.now().toString(),
-      name,
-      path,
-      type,
-      dateAdded: new Date().toISOString()
-    };
-    
-    // Check if bookmark already exists
-    if (!bookmarks.some(b => b.path === path)) {
-      setBookmarks([...bookmarks, newBookmark]);
-    }
-  };
+  }, []);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-white">
@@ -426,7 +343,6 @@ const App: React.FC = () => {
               onClick={() => {
                 if (currentPath && navigator.clipboard) {
                   navigator.clipboard.writeText(currentPath);
-                  // You could add a toast notification here
                   console.log('Path copied to clipboard:', currentPath);
                 }
               }}
@@ -583,7 +499,6 @@ const App: React.FC = () => {
                   const command = (e.target as HTMLInputElement).value;
                   if (command.trim()) {
                     handleCommand(command);
-                    // Clear the input after search
                     (e.target as HTMLInputElement).value = '';
                   }
                 }
@@ -736,7 +651,6 @@ const App: React.FC = () => {
         onClose={() => setIsNewItemDialogOpen(false)}
         currentPath={currentPath}
         onItemCreated={() => {
-          // Refresh the current directory
           if (currentPath) {
             readDirectory(currentPath);
           }
