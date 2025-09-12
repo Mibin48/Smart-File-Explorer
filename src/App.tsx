@@ -4,6 +4,7 @@ import { FileList } from './components/FileList';
 import { FilePreview } from './components/FilePreview';
 import { SettingsPanel } from './components/SettingsPanel';
 import { HelpDialog } from './components/HelpDialog';
+import { NewItemDialog } from './components/NewItemDialog';
 import { useFileSystem } from './hooks/useFileSystem';
 import { createCommandProcessor, AICommand } from './commands/aiCommands';
 import { AdvancedAIService, FileAnalysis } from './services/AdvancedAIService';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
   const [appSettings, setAppSettings] = useState<AppSettings>(settingsService.getSettings());
   const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
 
   const { files, loading, error, readDirectory, searchFiles, executeFileOperation } = useFileSystem();
 
@@ -44,6 +46,14 @@ const App: React.FC = () => {
         // Set default to TestFiles directory for demonstration
         const testFilesPath = 'C:\\Users\\mibin\\OneDrive\\Desktop\\Smart File-Explorer\\TestFiles';
         setCurrentPath(testFilesPath);
+        
+        // Load bookmarks
+        try {
+          const savedBookmarks = await (window as any).electronAPI.loadBookmarks();
+          setBookmarks(savedBookmarks);
+        } catch (err) {
+          console.warn('Failed to load bookmarks:', err);
+        }
       } catch (err) {
         console.warn('Failed to get user directories:', err);
         setCurrentPath('C:\\');
@@ -85,6 +95,21 @@ const App: React.FC = () => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+  
+  // Save bookmarks whenever they change
+  useEffect(() => {
+    const saveBookmarks = async () => {
+      try {
+        await (window as any).electronAPI.saveBookmarks(bookmarks);
+      } catch (err) {
+        console.warn('Failed to save bookmarks:', err);
+      }
+    };
+    
+    if (bookmarks.length > 0) {
+      saveBookmarks();
+    }
+  }, [bookmarks]);
 
   const handleAdvancedCommand = async (command: string, type: 'basic' | 'semantic' | 'advanced') => {
     setIsProcessing(true);
@@ -443,10 +468,13 @@ const App: React.FC = () => {
                 <span className="text-lg">🔄</span>
               </button>
             </div>
-            <div className="flex items-center space-x-2 bg-white rounded-lg shadow-sm border border-gray-200 px-3 py-2">
+            <button 
+              onClick={() => setIsNewItemDialogOpen(true)}
+              className="flex items-center space-x-2 bg-white rounded-lg shadow-sm border border-gray-200 px-3 py-2 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200"
+            >
               <span className="text-sm font-medium text-gray-700">📁 New</span>
-              <span className="text-gray-400">▼</span>
-            </div>
+              <span className="text-gray-400">+</span>
+            </button>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
@@ -739,6 +767,19 @@ const App: React.FC = () => {
         filePath={previewFilePath}
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
+      />
+      
+      {/* New Item Dialog */}
+      <NewItemDialog
+        isOpen={isNewItemDialogOpen}
+        onClose={() => setIsNewItemDialogOpen(false)}
+        currentPath={currentPath}
+        onItemCreated={() => {
+          // Refresh the current directory
+          if (currentPath) {
+            readDirectory(currentPath);
+          }
+        }}
       />
     </div>
   );

@@ -80,6 +80,37 @@ ipcMain.handle('read-dir', async (event, dirPath) => {
   }
 });
 
+// Handle new file/folder creation
+ipcMain.handle('create-item', async (event, itemType, parentPath, itemName) => {
+  try {
+    const fullPath = path.join(parentPath, itemName);
+    
+    switch (itemType) {
+      case 'folder':
+        await fs.mkdir(fullPath, { recursive: true });
+        break;
+      case 'text-file':
+        await fs.writeFile(fullPath + '.txt', '');
+        break;
+      case 'document':
+        await fs.writeFile(fullPath + '.docx', '');
+        break;
+      case 'spreadsheet':
+        await fs.writeFile(fullPath + '.xlsx', '');
+        break;
+      case 'presentation':
+        await fs.writeFile(fullPath + '.pptx', '');
+        break;
+      default:
+        await fs.writeFile(fullPath, '');
+    }
+    
+    return { success: true, path: fullPath };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 // Handle file operations with safety checks
 ipcMain.handle('file-operation', async (event, operation, files, destination) => {
   try {
@@ -639,4 +670,94 @@ ipcMain.handle('get-user-home', async () => {
     music: path.join(userHome, 'Music'),
     oneDrive: path.join(userHome, 'OneDrive')
   };
+});
+
+// Bookmark management
+const bookmarksFilePath = path.join(userHome, '.smart-file-explorer-bookmarks.json');
+
+// Load bookmarks from disk
+ipcMain.handle('load-bookmarks', async () => {
+  try {
+    if (fsSync.existsSync(bookmarksFilePath)) {
+      const data = await fs.readFile(bookmarksFilePath, 'utf8');
+      return JSON.parse(data);
+    }
+    return [];
+  } catch (err) {
+    console.error('Failed to load bookmarks:', err);
+    return [];
+  }
+});
+
+// Save bookmarks to disk
+ipcMain.handle('save-bookmarks', async (event, bookmarks) => {
+  try {
+    await fs.writeFile(bookmarksFilePath, JSON.stringify(bookmarks, null, 2));
+    return { success: true };
+  } catch (err) {
+    console.error('Failed to save bookmarks:', err);
+    return { error: err.message };
+  }
+});
+
+// Enhanced create item with more templates
+ipcMain.handle('create-item-enhanced', async (event, itemType, parentPath, itemName, templateData) => {
+  try {
+    const fullPath = path.join(parentPath, itemName);
+    
+    switch (itemType) {
+      case 'folder':
+        await fs.mkdir(fullPath, { recursive: true });
+        break;
+        
+      case 'text-file':
+        const content = templateData?.content || '';
+        await fs.writeFile(fullPath + '.txt', content);
+        break;
+        
+      case 'markdown-file':
+        const markdownContent = templateData?.content || `# ${itemName}\n\nYour content here...`;
+        await fs.writeFile(fullPath + '.md', markdownContent);
+        break;
+        
+      case 'json-file':
+        const jsonContent = templateData?.content || JSON.stringify({}, null, 2);
+        await fs.writeFile(fullPath + '.json', jsonContent);
+        break;
+        
+      case 'html-file':
+        const htmlContent = templateData?.content || `<!DOCTYPE html>\n<html>\n<head>\n    <title>${itemName}</title>\n</head>\n<body>\n    <h1>${itemName}</h1>\n    <p>Your content here...</p>\n</body>\n</html>`;
+        await fs.writeFile(fullPath + '.html', htmlContent);
+        break;
+        
+      case 'css-file':
+        const cssContent = templateData?.content || `/* ${itemName} styles */\n\nbody {\n    font-family: Arial, sans-serif;\n    margin: 0;\n    padding: 20px;\n}`;
+        await fs.writeFile(fullPath + '.css', cssContent);
+        break;
+        
+      case 'js-file':
+        const jsContent = templateData?.content || `// ${itemName}\n\nconsole.log('Hello from ${itemName}');`;
+        await fs.writeFile(fullPath + '.js', jsContent);
+        break;
+        
+      case 'document':
+        await fs.writeFile(fullPath + '.docx', '');
+        break;
+        
+      case 'spreadsheet':
+        await fs.writeFile(fullPath + '.xlsx', '');
+        break;
+        
+      case 'presentation':
+        await fs.writeFile(fullPath + '.pptx', '');
+        break;
+        
+      default:
+        await fs.writeFile(fullPath, templateData?.content || '');
+    }
+    
+    return { success: true, path: fullPath };
+  } catch (err) {
+    return { error: err.message };
+  }
 });
