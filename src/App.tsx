@@ -55,10 +55,10 @@ const App: React.FC = () => {
           const processor = createCommandProcessor(apiKey);
           setAiProcessor(processor);
           
-          // Initialize Advanced AI Service
+          // Initialize Advanced AI Service but don't enable by default
           const advancedService = new AdvancedAIService(apiKey);
           setAdvancedAIService(advancedService);
-          setUseAdvancedInput(true); // Enable advanced features when API key is available
+          // Start with basic AI - user can upgrade to advanced
         } catch (err) {
           console.warn('Failed to initialize AI processor:', err);
         }
@@ -332,7 +332,9 @@ const App: React.FC = () => {
                 <div className="text-blue-600">Selected: {selectedFiles.length}</div>
               )}
               {advancedAIService && (
-                <div className="text-purple-600">🧠 AI Enhanced</div>
+                <div className={useAdvancedInput ? "text-purple-600" : "text-blue-600"}>
+                  {useAdvancedInput ? "🧠 Advanced AI" : "📋 Basic AI"}
+                </div>
               )}
             </div>
             <button 
@@ -340,10 +342,12 @@ const App: React.FC = () => {
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 showOrganizationPanel 
                   ? 'bg-purple-500 text-white hover:bg-purple-600' 
-                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                  : useAdvancedInput && advancedAIService
+                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
-              disabled={!advancedAIService}
-              title={advancedAIService ? 'Toggle Smart Organization Panel' : 'AI features require OpenAI API key'}
+              disabled={!advancedAIService || !useAdvancedInput}
+              title={!advancedAIService ? 'AI features require OpenAI API key' : !useAdvancedInput ? 'Upgrade to Advanced AI to access Smart Organization' : 'Toggle Smart Organization Panel'}
             >
               🧠 Smart AI
             </button>
@@ -385,13 +389,47 @@ const App: React.FC = () => {
         
         {/* AI Mode Toggle */}
         {advancedAIService && (
-          <div className="mt-2 flex justify-end">
+          <div className="mt-3 flex justify-between items-center">
+            <div className="text-xs text-gray-500">
+              {useAdvancedInput ? (
+                <span>🚀 <strong>Advanced AI</strong> - Semantic search, file analysis & smart organization</span>
+              ) : (
+                <span>📋 <strong>Basic AI</strong> - Fast file type and keyword search</span>
+              )}
+            </div>
             <button
               onClick={() => setUseAdvancedInput(!useAdvancedInput)}
-              className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                useAdvancedInput 
+                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 shadow-md hover:shadow-lg'
+              }`}
             >
-              {useAdvancedInput ? '📋 Switch to Basic' : '🚀 Switch to Advanced AI'}
+              {useAdvancedInput ? '⬅️ Back to Basic' : '✨ Upgrade to Advanced AI'}
             </button>
+          </div>
+        )}
+        
+        {/* Welcome Message for Basic AI */}
+        {!useAdvancedInput && !searchStatus && advancedAIService && (
+          <div className="mt-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="text-2xl mr-3">🚀</span>
+                <div>
+                  <div className="text-sm font-medium text-gray-800">Welcome to Smart AI File Explorer!</div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    You're in <strong>Basic AI mode</strong> - perfect for fast file searches. Try commands like "find PDF files" or "show MP3 files".
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setUseAdvancedInput(true)}
+                className="text-xs px-3 py-1 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors whitespace-nowrap"
+              >
+                ✨ Try Advanced
+              </button>
+            </div>
           </div>
         )}
         
