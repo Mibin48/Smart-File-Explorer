@@ -50,3 +50,17 @@ release/
 # Temporary files
 *.tmp
 *.temp
+
+# Large test files (>50MB) - GitHub limit is 100MB
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.flv
+*.wmv
+*.m4v
+*.3gp
+TestFiles/Videos/*.mp4
+TestFiles/Videos/*.mov
+TestFiles/Videos/*.avi

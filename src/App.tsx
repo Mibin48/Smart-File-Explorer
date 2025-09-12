@@ -5,9 +5,12 @@ import { FileTree } from './components/FileTree';
 import { ActionPreview } from './components/ActionPreview';
 import { FileList } from './components/FileList';
 import { SmartOrganizationPanel } from './components/SmartOrganizationPanel';
+import { SettingsPanel } from './components/SettingsPanel';
+import { HelpDialog } from './components/HelpDialog';
 import { useFileSystem } from './hooks/useFileSystem';
 import { createCommandProcessor, AICommand } from './commands/aiCommands';
 import { AdvancedAIService, FileAnalysis } from './services/AdvancedAIService';
+import { getSettingsService, AppSettings } from './services/SettingsService';
 
 const App: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>('');
@@ -23,6 +26,10 @@ const App: React.FC = () => {
   const [useAdvancedInput, setUseAdvancedInput] = useState(false);
   const [showOrganizationPanel, setShowOrganizationPanel] = useState(false);
   const [organizationResults, setOrganizationResults] = useState<string>('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [settingsService] = useState(() => getSettingsService());
+  const [appSettings, setAppSettings] = useState<AppSettings>(settingsService.getSettings());
 
   const { files, loading, error, readDirectory, searchFiles, executeFileOperation } = useFileSystem();
 
@@ -109,6 +116,14 @@ const App: React.FC = () => {
   const handleFileAnalysis = (analyses: FileAnalysis[]) => {
     setFileAnalyses(analyses);
     setActionPreview('📊 File analysis completed! Check the results in the action panel.');
+  };
+
+  const handleSettingsChange = (newSettings: AppSettings) => {
+    setAppSettings(newSettings);
+    // Apply settings changes to the app state
+    if (newSettings.ai.enableAdvancedFeatures) {
+      setUseAdvancedInput(true);
+    }
   };
 
   const handleOrganizationAction = async (action: string, files: string[], destination?: string) => {
@@ -332,10 +347,16 @@ const App: React.FC = () => {
             >
               🧠 Smart AI
             </button>
-            <button className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
               Settings
             </button>
-            <button className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+            <button 
+              onClick={() => setIsHelpOpen(true)}
+              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            >
               Help
             </button>
           </div>
@@ -428,6 +449,20 @@ const App: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Settings Dialog */}
+      <SettingsPanel
+        settingsService={settingsService}
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSettingsChange={handleSettingsChange}
+      />
+      
+      {/* Help Dialog */}
+      <HelpDialog
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+      />
     </div>
   );
 };
