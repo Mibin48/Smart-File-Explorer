@@ -17,6 +17,7 @@ interface FileListProps {
   onFileSelect: (files: string[]) => void;
   onFilePreview?: (filePath: string) => void;
   onFolderNavigate?: (folderPath: string) => void;
+  viewMode?: 'list' | 'grid' | 'thumbnail';
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -27,6 +28,7 @@ export const FileList: React.FC<FileListProps> = ({
   onFileSelect,
   onFilePreview,
   onFolderNavigate,
+  viewMode = 'list',
 }) => {
   const handleFileClick = (file: FileItem) => {
     if (file.isDirectory) {
@@ -111,25 +113,9 @@ export const FileList: React.FC<FileListProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="bg-gray-50 border-b px-4 py-2 grid grid-cols-12 text-xs font-medium text-gray-600 flex-shrink-0">
-        <div className="col-span-6 flex items-center">
-          <span>Name</span>
-        </div>
-        <div className="col-span-3 flex items-center">
-          <span>Date modified</span>
-        </div>
-        <div className="col-span-2 flex items-center">
-          <span>Type</span>
-        </div>
-        <div className="col-span-1 flex items-center">
-          <span>Size</span>
-        </div>
-      </div>
-
+    <div className="h-full">
       {/* File List */}
-      <div className="flex-1 overflow-y-auto scrollbar-always min-h-0">
+      <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400">
         {files.length === 0 && !loading ? (
           <div className="flex items-center justify-center h-full text-gray-400">
             <div className="text-center">
@@ -148,55 +134,91 @@ export const FileList: React.FC<FileListProps> = ({
             </div>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className={viewMode === 'list' ? 'divide-y divide-gray-100' : viewMode === 'grid' ? 'grid grid-cols-6 gap-4 p-4' : 'grid grid-cols-4 gap-6 p-6'}>
             {files.map((file) => (
-              <div
-                key={file.fullPath}
-                className={`grid grid-cols-12 px-4 py-2 hover:bg-gray-50 cursor-pointer group relative ${
-                  selectedFiles.includes(file.fullPath) ? 'bg-blue-50' : ''
-                }`}
-                onClick={() => handleFileClick(file)}
-                title={file.isDirectory ? `Click to open folder: ${file.name}` : `Click to preview: ${file.name}`}
-              >
-                <div className="col-span-6 flex items-center">
-                  {getFileIcon(file)}
-                  <span className="ml-3 text-sm truncate">{file.name}</span>
+              viewMode === 'list' ? (
+                <div
+                  key={file.fullPath}
+                  className={`grid grid-cols-12 px-6 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 cursor-pointer group relative border-b border-gray-100 transition-all duration-200 hover:shadow-sm ${
+                    selectedFiles.includes(file.fullPath) 
+                      ? 'bg-gradient-to-r from-blue-100 to-blue-200 border-blue-300 shadow-sm' 
+                      : 'hover:border-blue-200'
+                  }`}
+                  onClick={() => handleFileClick(file)}
+                  title={file.isDirectory ? `Click to open folder: ${file.name}` : `Click to preview: ${file.name}`}
+                >
+                  <div className="col-span-6 flex items-center">
+                    <div className="flex-shrink-0 mr-3">{getFileIcon(file)}</div>
+                    <span className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-700 transition-colors duration-200">{file.name}</span>
+                  </div>
+                  <div className="col-span-3 flex items-center text-xs text-gray-500">
+                    {file.modified}
+                  </div>
+                  <div className="col-span-2 flex items-center text-xs text-gray-500">
+                    {file.type}
+                  </div>
+                  <div className="col-span-1 flex items-center text-xs text-gray-500 relative">
+                    {file.size}
+                    {/* Selection checkbox */}
+                    <button
+                      onClick={(e) => handleFileSelect(file, e)}
+                      className={`ml-2 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                        selectedFiles.includes(file.fullPath)
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : 'border-gray-300 hover:border-blue-400 opacity-0 group-hover:opacity-100'
+                      }`}
+                      title="Select file"
+                    >
+                      {selectedFiles.includes(file.fullPath) && (
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="col-span-3 flex items-center text-xs text-gray-500">
-                  {file.modified}
+              ) : (
+                <div
+                  key={file.fullPath}
+                  className={`p-4 rounded-xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 cursor-pointer group relative transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+                    selectedFiles.includes(file.fullPath) 
+                      ? 'bg-gradient-to-br from-blue-100 to-blue-200 border-2 border-blue-400 shadow-md transform scale-105' 
+                      : 'border border-gray-200 hover:border-blue-300'
+                  }`}
+                  onClick={() => handleFileClick(file)}
+                  title={file.isDirectory ? `Click to open folder: ${file.name}` : `Click to preview: ${file.name}`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="mb-3 p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md transition-shadow duration-200">
+                      {React.cloneElement(getFileIcon(file), { 
+                        className: viewMode === 'thumbnail' ? 'w-16 h-16' : 'w-10 h-10'
+                      })}
+                    </div>
+                    <span className="text-sm font-medium text-gray-800 truncate w-full group-hover:text-blue-700 transition-colors duration-200">{file.name}</span>
+                    <div className="text-xs text-gray-500 mt-1 font-medium">
+                      {file.isDirectory ? 'Folder' : file.size}
+                    </div>
+                    <button
+                      onClick={(e) => handleFileSelect(file, e)}
+                      className={`absolute top-2 right-2 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                        selectedFiles.includes(file.fullPath)
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : 'border-gray-300 hover:border-blue-400 opacity-0 group-hover:opacity-100'
+                      }`}
+                      title="Select file"
+                    >
+                      {selectedFiles.includes(file.fullPath) && (
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="col-span-2 flex items-center text-xs text-gray-500">
-                  {file.type}
-                </div>
-                <div className="col-span-1 flex items-center text-xs text-gray-500 relative">
-                  {file.size}
-                  {/* Selection checkbox */}
-                  <button
-                    onClick={(e) => handleFileSelect(file, e)}
-                    className={`ml-2 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
-                      selectedFiles.includes(file.fullPath)
-                        ? 'bg-blue-500 border-blue-500 text-white'
-                        : 'border-gray-300 hover:border-blue-400 opacity-0 group-hover:opacity-100'
-                    }`}
-                    title="Select file"
-                  >
-                    {selectedFiles.includes(file.fullPath) && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
+              )
             ))}
           </div>
         )}
-      </div>
-
-      {/* Status Bar */}
-      <div className="bg-gray-50 border-t px-4 py-2 flex justify-between text-xs text-gray-600 flex-shrink-0">
-        <div>{files.length} items</div>
-        <div>{selectedFiles.length} selected</div>
       </div>
     </div>
   );

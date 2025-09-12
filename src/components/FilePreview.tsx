@@ -111,8 +111,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ filePath, isOpen, onCl
     switch (fileContent.type) {
       case 'text':
         return (
-          <div className="h-full">
-            <pre className="bg-gray-50 p-4 rounded text-sm font-mono h-full overflow-auto whitespace-pre-wrap">
+          <div className="h-full bg-gray-50 rounded overflow-hidden">
+            <pre className="p-4 text-sm font-mono h-full overflow-auto whitespace-pre-wrap scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 leading-relaxed">
               {fileContent.content}
             </pre>
           </div>
@@ -120,11 +120,12 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ filePath, isOpen, onCl
 
       case 'image':
         return (
-          <div className="flex items-center justify-center h-full bg-gray-50 rounded">
+          <div className="h-full bg-gray-50 rounded overflow-auto flex items-start justify-center scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <img 
               src={fileContent.content || ''} 
               alt={fileContent.fileName}
-              className="max-w-full max-h-full object-contain rounded"
+              className="max-w-none max-h-none object-contain rounded shadow-sm m-4"
+              style={{ minWidth: '100%', minHeight: '100%', objectFit: 'contain' }}
             />
           </div>
         );
@@ -163,7 +164,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ filePath, isOpen, onCl
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-[90vw] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
           <div className="flex items-center space-x-3">
             <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
@@ -200,7 +201,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ filePath, isOpen, onCl
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 overflow-hidden">
+        <div className="flex-1 overflow-auto min-h-0 p-4">
           {renderContent()}
         </div>
       </div>

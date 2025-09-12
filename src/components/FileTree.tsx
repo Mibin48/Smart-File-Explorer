@@ -298,7 +298,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
           Directories
         </h3>
       </div>
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400">
         <div className="space-y-1">
           {treeData.map((node) => renderNode(node))}
         </div>
