@@ -6,6 +6,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDir: (path) => ipcRenderer.invoke('read-dir', path),
   searchFiles: (query, searchPath) => ipcRenderer.invoke('search-files', query, searchPath),
   fileOperation: (operation, files, destination) => ipcRenderer.invoke('file-operation', operation, files, destination),
+  
+  // File preview operations
+  readFileContent: (filePath, maxSize) => ipcRenderer.invoke('read-file-content', filePath, maxSize),
+  openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
 
   // AI integration
   processAICommand: (command) => ipcRenderer.invoke('process-ai-command', command),

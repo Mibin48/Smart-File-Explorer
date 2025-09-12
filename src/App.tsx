@@ -4,6 +4,7 @@ import { AdvancedCommandInput } from './components/AdvancedCommandInput';
 import { FileTree } from './components/FileTree';
 import { ActionPreview } from './components/ActionPreview';
 import { FileList } from './components/FileList';
+import { FilePreview } from './components/FilePreview';
 import { SmartOrganizationPanel } from './components/SmartOrganizationPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { HelpDialog } from './components/HelpDialog';
@@ -30,6 +31,8 @@ const App: React.FC = () => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [settingsService] = useState(() => getSettingsService());
   const [appSettings, setAppSettings] = useState<AppSettings>(settingsService.getSettings());
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const { files, loading, error, readDirectory, searchFiles, executeFileOperation } = useFileSystem();
 
@@ -300,6 +303,15 @@ const App: React.FC = () => {
     await readDirectory(newPath);
   };
 
+  const handleFilePreview = (filePath: string) => {
+    setPreviewFilePath(filePath);
+    setIsPreviewOpen(true);
+  };
+
+  const handleFolderNavigation = async (folderPath: string) => {
+    await handlePathChange(folderPath);
+  };
+
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-50">
       {/* Header */}
@@ -461,6 +473,8 @@ const App: React.FC = () => {
             error={error}
             selectedFiles={selectedFiles}
             onFileSelect={setSelectedFiles}
+            onFilePreview={handleFilePreview}
+            onFolderNavigate={handleFolderNavigation}
           />
         </div>
 
@@ -500,6 +514,13 @@ const App: React.FC = () => {
       <HelpDialog
         isOpen={isHelpOpen}
         onClose={() => setIsHelpOpen(false)}
+      />
+      
+      {/* File Preview */}
+      <FilePreview
+        filePath={previewFilePath}
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
       />
     </div>
   );

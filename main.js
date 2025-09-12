@@ -546,6 +546,87 @@ ipcMain.handle('process-ai-command', async (event, command) => {
   }
 });
 
+// Handle file content reading for preview
+ipcMain.handle('read-file-content', async (event, filePath, maxSize = 1024 * 1024) => {
+  try {
+    const stats = await fs.stat(filePath);
+    
+    // Check if file exists and is readable
+    if (!stats.isFile()) {
+      return { error: 'Not a file' };
+    }
+    
+    // Check file size limit (default 1MB)
+    if (stats.size > maxSize) {
+      return { 
+        error: 'File too large for preview',
+        size: stats.size,
+        maxSize 
+      };
+    }
+    
+    const fileExtension = path.extname(filePath).toLowerCase();
+    const fileName = path.basename(filePath);
+    
+    // Handle different file types
+    if (['.txt', '.md', '.json', '.js', '.ts', '.html', '.css', '.xml', '.csv', '.log'].includes(fileExtension)) {
+      // Text files - read as UTF-8
+      const content = await fs.readFile(filePath, 'utf8');
+      return {
+        type: 'text',
+        content,
+        fileName,
+        size: stats.size,
+        extension: fileExtension
+      };
+    } else if (['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'].includes(fileExtension)) {
+      // Images - return base64
+      const content = await fs.readFile(filePath);
+      const base64 = content.toString('base64');
+      return {
+        type: 'image',
+        content: `data:image/${fileExtension.slice(1)};base64,${base64}`,
+        fileName,
+        size: stats.size,
+        extension: fileExtension
+      };
+    } else if (fileExtension === '.pdf') {
+      // PDFs - can't preview content but return metadata
+      return {
+        type: 'pdf',
+        content: null,
+        fileName,
+        size: stats.size,
+        extension: fileExtension,
+        message: 'PDF preview not supported. Click to open with default application.'
+      };
+    } else {
+      // Binary or unknown files
+      return {
+        type: 'binary',
+        content: null,
+        fileName,
+        size: stats.size,
+        extension: fileExtension,
+        message: 'Binary file - preview not available'
+      };
+    }
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// Handle opening files with default application
+ipcMain.handle('open-file', async (event, filePath) => {
+  try {
+    const { shell } = require('electron');
+    await shell.openPath(filePath);
+    return { success: true };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 // Get user home directory
 ipcMain.handle('get-user-home', async () => {
   return {

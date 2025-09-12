@@ -15,6 +15,8 @@ interface FileListProps {
   error: string | null;
   selectedFiles: string[];
   onFileSelect: (files: string[]) => void;
+  onFilePreview?: (filePath: string) => void;
+  onFolderNavigate?: (folderPath: string) => void;
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -23,8 +25,27 @@ export const FileList: React.FC<FileListProps> = ({
   error,
   selectedFiles,
   onFileSelect,
+  onFilePreview,
+  onFolderNavigate,
 }) => {
   const handleFileClick = (file: FileItem) => {
+    if (file.isDirectory) {
+      // Navigate to folder
+      if (onFolderNavigate) {
+        onFolderNavigate(file.fullPath);
+      }
+    } else {
+      // Show file preview
+      if (onFilePreview) {
+        onFilePreview(file.fullPath);
+      }
+    }
+  };
+
+  const handleFileSelect = (file: FileItem, event: React.MouseEvent) => {
+    // Prevent triggering click when selecting with Ctrl/Cmd
+    event.stopPropagation();
+    
     if (selectedFiles.includes(file.fullPath)) {
       onFileSelect(selectedFiles.filter(path => path !== file.fullPath));
     } else {
@@ -131,10 +152,11 @@ export const FileList: React.FC<FileListProps> = ({
             {files.map((file) => (
               <div
                 key={file.fullPath}
-                className={`grid grid-cols-12 px-4 py-2 hover:bg-gray-50 cursor-pointer ${
+                className={`grid grid-cols-12 px-4 py-2 hover:bg-gray-50 cursor-pointer group relative ${
                   selectedFiles.includes(file.fullPath) ? 'bg-blue-50' : ''
                 }`}
                 onClick={() => handleFileClick(file)}
+                title={file.isDirectory ? `Click to open folder: ${file.name}` : `Click to preview: ${file.name}`}
               >
                 <div className="col-span-6 flex items-center">
                   {getFileIcon(file)}
@@ -146,8 +168,24 @@ export const FileList: React.FC<FileListProps> = ({
                 <div className="col-span-2 flex items-center text-xs text-gray-500">
                   {file.type}
                 </div>
-                <div className="col-span-1 flex items-center text-xs text-gray-500">
+                <div className="col-span-1 flex items-center text-xs text-gray-500 relative">
                   {file.size}
+                  {/* Selection checkbox */}
+                  <button
+                    onClick={(e) => handleFileSelect(file, e)}
+                    className={`ml-2 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                      selectedFiles.includes(file.fullPath)
+                        ? 'bg-blue-500 border-blue-500 text-white'
+                        : 'border-gray-300 hover:border-blue-400 opacity-0 group-hover:opacity-100'
+                    }`}
+                    title="Select file"
+                  >
+                    {selectedFiles.includes(file.fullPath) && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             ))}
