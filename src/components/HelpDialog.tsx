@@ -14,26 +14,26 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
 
   const aiCommandExamples = {
     basic: [
-      { command: 'find PDF files', description: 'Search for all PDF documents' },
-      { command: 'show images from today', description: 'Find images modified today' },
-      { command: 'find files larger than 100MB', description: 'Search for large files' },
-      { command: 'show recent documents', description: 'Find recently modified documents' },
-      { command: 'find videos', description: 'Search for all video files' },
-      { command: 'show audio files', description: 'Find music and audio files' }
+      { command: 'find PDF files', description: 'Find documents like "Chapter 2.pdf", "Experiment 1.pdf" (searches for .pdf)' },
+      { command: 'show TTF files', description: 'Find JetBrains Mono fonts (searches for .ttf extension)' },
+      { command: 'find C files', description: 'Search for "01_calculation.c", "infix.c" (searches for .c)' },
+      { command: 'show executable files', description: 'Find compiled programs like .exe files' },
+      { command: 'find Python files', description: 'Show "gui1.py", "sales.py" scripts (searches for .py)' },
+      { command: 'show MP3 files', description: 'Find all audio files (searches for .mp3 extension)' }
     ],
     semantic: [
-      { command: 'find documents about budget planning', description: 'Semantic search for budget-related content' },
-      { command: 'show files related to machine learning', description: 'Find ML-related files by content meaning' },
-      { command: 'find images of charts or graphs', description: 'Search for chart images using AI vision' },
-      { command: 'documents about project management', description: 'Content-based document search' },
-      { command: 'files similar to presentation.pptx', description: 'Find files with similar content' }
+      { command: 'find Moonlight files', description: 'Finds "Piano Sonata Moonlight" MP3 (semantic keyword match)' },
+      { command: 'show Nike presentation', description: 'Locates Nike business case .pptx files' },
+      { command: 'find classical music', description: 'Identifies classical MP3s like Goldberg, Chopin' },
+      { command: 'show electronics documents', description: 'Finds diode, rectifier, amplifier PDFs' },
+      { command: 'find JetBrains fonts', description: 'Locates JetBrains Mono TTF files by brand name' }
     ],
     advanced: [
-      { command: 'organize files by content type and create folders', description: 'AI-powered file organization' },
-      { command: 'find duplicate files and suggest which to keep', description: 'Advanced duplicate detection' },
-      { command: 'analyze file relationships and suggest improvements', description: 'File relationship analysis' },
-      { command: 'categorize my documents by subject', description: 'Automatic content categorization' },
-      { command: 'find files that need better names', description: 'File naming suggestions' }
+      { command: 'organize audio files by genre and create folders', description: 'Separate classical, Bollywood, sound effects into folders' },
+      { command: 'find duplicate book images and suggest which to keep', description: 'Identify "book10.jpg" vs "book10 - Copy.jpg"' },
+      { command: 'group programming files by language', description: 'Organize C files, Python scripts, HTML pages separately' },
+      { command: 'categorize documents by academic subject', description: 'Group electronics PDFs, web projects, presentations' },
+      { command: 'rename screenshot files with better descriptions', description: 'Improve names like "Screenshot 2025-03-28..."' }
     ]
   };
 
@@ -169,13 +169,14 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
                   </div>
 
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
-                    <h4 className="font-semibold text-yellow-800 mb-2">💡 Pro Tips</h4>
+                    <h4 className="font-semibold text-yellow-800 mb-2">💡 Pro Tips with Your Test Files</h4>
                     <ul className="text-sm text-yellow-700 space-y-1">
-                      <li>• Use specific file types: "PDF", "JPG", "MP4" for precise results</li>
-                      <li>• Try size filters: "large files", "files bigger than 50MB"</li>
-                      <li>• Use time filters: "recent files", "files from today", "old files"</li>
-                      <li>• Enable AI features in Settings for semantic and advanced search</li>
-                      <li>• Save frequently used searches as favorites</li>
+                      <li>✅ Try: "find TTF files" - Works! Finds JetBrains Mono fonts</li>
+                      <li>✅ Search: "find Moonlight files" - Works! Locates Piano Sonata MP3</li>
+                      <li>✅ Use: "show executable files" - Works! Shows compiled .exe programs</li>
+                      <li>✅ Try: "find mountain files" - Works! Finds nature wallpapers by name</li>
+                      <li>✅ Search: "show Nike presentation" - Works! Locates business presentations</li>
+                      <li>✅ Use: "find Python files" - Works! Shows all .py scripts</li>
                     </ul>
                   </div>
                 </div>

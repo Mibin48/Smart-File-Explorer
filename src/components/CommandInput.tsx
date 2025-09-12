@@ -101,8 +101,8 @@ export const CommandInput: React.FC<CommandInputProps> = ({ onCommand, currentPa
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={hasSelectedDirectory 
-              ? `🔍 Ask AI to search in ${currentFolder}: "find all PDFs", "show large files", etc...` 
-              : "Select a directory first, then enter your AI search command..."
+              ? `🔍 Ask AI to search in ${currentFolder}: "find Moonlight Sonata", "show C files", "find merged PDFs", etc...` 
+              : "Select TestFiles directory first, then try: 'find classical music', 'show programming files'..."
             }
             disabled={!hasSelectedDirectory}
             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${

@@ -28,24 +28,25 @@ export const AdvancedCommandInput: React.FC<AdvancedCommandInputProps> = ({
   const currentFolder = currentPath ? currentPath.split('\\\\').pop() || 'directory' : 'directory';
   const hasSelectedDirectory = Boolean(currentPath);
 
-  // Advanced command examples for different modes
+  // Real examples based on actual test files
   const commandExamples = {
     basic: [
-      'Find all PDF files',
-      'Show images from this week',
-      'Delete temporary files'
+      'Find TTF font files',
+      'Show Moonlight Sonata audio',
+      'Find compiled C programs'
     ],
     semantic: [
-      'Find documents about budget planning',
-      'Show me files related to project management',
-      'Find images of charts or graphs'
+      'Find documents about electronics and diodes',
+      'Show me classical music files',
+      'Find programming files and code'
     ],
     advanced: [
-      'Organize files by content type and create folders',
-      'Find duplicate files and suggest which to keep',
-      'Analyze file relationships and suggest improvements'
+      'Organize audio files by genre (classical vs Bollywood)',
+      'Find duplicate book cover images',
+      'Group programming files by language type'
     ]
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
