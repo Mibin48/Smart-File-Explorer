@@ -64,6 +64,7 @@ ipcMain.handle('read-dir', async (event, dirPath) => {
           type: entry.isDirectory() ? 'Folder' : path.extname(entry.name).replace('.', '').toUpperCase() || 'File',
           modified: stats.mtime.toLocaleDateString(),
           size: entry.isDirectory() ? '-' : `${(stats.size / 1024).toFixed(1)} KB`,
+          sizeInBytes: entry.isDirectory() ? 0 : stats.size,
           isDirectory: entry.isDirectory(),
           fullPath,
         };
@@ -145,11 +146,17 @@ ipcMain.handle('file-operation', async (event, operation, files, destination) =>
         for (const file of files) {
           const fileName = path.basename(file);
           const destPath = path.join(destination, fileName);
-
+          
+          const stats = await fs.stat(file);
           if (operation === 'move') {
             await fs.rename(file, destPath);
           } else {
-            await fs.copyFile(file, destPath);
+            // Copy operation - handle directories recursively
+            if (stats.isDirectory()) {
+              await copyDirectory(file, destPath);
+            } else {
+              await fs.copyFile(file, destPath);
+            }
           }
         }
         return { success: true };
@@ -690,11 +697,7 @@ ipcMain.handle('get-drives', async () => {
         // Try to access the drive to see if it exists
         const stats = await fs.stat(drivePath);
         if (stats.isDirectory()) {
-          drives.push({
-            letter,
-            path: drivePath,
-            label: letter === 'C' ? 'Local Disk' : 'Drive'
-          });
+          drives.push(drivePath);
         }
       } catch (err) {
         // Drive doesn't exist or is not accessible, skip it
@@ -704,7 +707,7 @@ ipcMain.handle('get-drives', async () => {
     return drives;
   } catch (err) {
     console.error('Failed to get drives:', err);
-    return [{ letter: 'C', path: 'C:\\', label: 'Local Disk' }]; // Fallback to C: drive
+    return ['C:\\']; // Fallback to C: drive
   }
 });
 
@@ -797,3 +800,42 @@ ipcMain.handle('create-item-enhanced', async (event, itemType, parentPath, itemN
     return { error: err.message };
   }
 });
+
+// Handle file rename
+ipcMain.handle('rename-file', async (event, oldPath, newName) => {
+  try {
+    const directory = path.dirname(oldPath);
+    const newPath = path.join(directory, newName);
+    
+    // Check if file already exists
+    if (fsSync.existsSync(newPath)) {
+      return { error: 'A file with this name already exists' };
+    }
+    
+    await fs.rename(oldPath, newPath);
+    return { success: true, newPath };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// Helper function to copy directories recursively
+async function copyDirectory(src, dest) {
+  try {
+    await fs.mkdir(dest, { recursive: true });
+    const entries = await fs.readdir(src, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+      
+      if (entry.isDirectory()) {
+        await copyDirectory(srcPath, destPath);
+      } else {
+        await fs.copyFile(srcPath, destPath);
+      }
+    }
+  } catch (err) {
+    throw err;
+  }
+}

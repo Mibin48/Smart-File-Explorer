@@ -53,6 +53,12 @@ const App: React.FC = () => {
   // Bookmark state
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   
+  // Clipboard and quick actions state
+  const [clipboardFiles, setClipboardFiles] = useState<string[]>([]);
+  const [clipboardOperation, setClipboardOperation] = useState<'copy' | 'cut' | null>(null);
+  const [isRenaming, setIsRenaming] = useState<string | null>(null);
+  const [newFileName, setNewFileName] = useState<string>('');
+  
   // AI and search state
   const [aiProcessor, setAiProcessor] = useState<any>(null);
   const [advancedAIService, setAdvancedAIService] = useState<AdvancedAIService | null>(null);
@@ -198,6 +204,83 @@ const App: React.FC = () => {
       setBookmarks([...bookmarks, newBookmark]);
     }
   }, [bookmarks]);
+
+  // Quick action handlers
+  const handleCopy = useCallback(() => {
+    if (selectedFiles.length > 0) {
+      setClipboardFiles(selectedFiles);
+      setClipboardOperation('copy');
+      setSearchStatus(`Copied ${selectedFiles.length} item(s) to clipboard`);
+    }
+  }, [selectedFiles]);
+
+  const handleCut = useCallback(() => {
+    if (selectedFiles.length > 0) {
+      setClipboardFiles(selectedFiles);
+      setClipboardOperation('cut');
+      setSearchStatus(`Cut ${selectedFiles.length} item(s) to clipboard`);
+    }
+  }, [selectedFiles]);
+
+  const handlePaste = useCallback(async () => {
+    if (clipboardFiles.length > 0 && clipboardOperation && currentPath) {
+      try {
+        const operation = clipboardOperation === 'copy' ? 'copy' : 'move';
+        const success = await executeFileOperation(operation, clipboardFiles, currentPath);
+        
+        if (success) {
+          setSearchStatus(`${operation === 'copy' ? 'Copied' : 'Moved'} ${clipboardFiles.length} item(s)`);
+          if (clipboardOperation === 'cut') {
+            setClipboardFiles([]);
+            setClipboardOperation(null);
+          }
+          await readDirectory(currentPath);
+        }
+      } catch (error) {
+        setSearchStatus(`Failed to paste files: ${error}`);
+      }
+    }
+  }, [clipboardFiles, clipboardOperation, currentPath, executeFileOperation, readDirectory]);
+
+  const handleDelete = useCallback(async () => {
+    if (selectedFiles.length > 0) {
+      const success = await executeFileOperation('delete', selectedFiles);
+      if (success) {
+        setSelectedFiles([]);
+        setSearchStatus(`Deleted ${selectedFiles.length} item(s)`);
+        await readDirectory(currentPath);
+      }
+    }
+  }, [selectedFiles, executeFileOperation, currentPath, readDirectory]);
+
+  const handleRename = useCallback((filePath: string, currentName: string) => {
+    setIsRenaming(filePath);
+    setNewFileName(currentName);
+  }, []);
+
+  const handleRenameConfirm = useCallback(async () => {
+    if (isRenaming && newFileName.trim() && currentPath) {
+      try {
+        // This would need to be implemented in the main process
+        const result = await (window as any).electronAPI.renameFile(isRenaming, newFileName.trim());
+        if (result.success) {
+          setSearchStatus(`Renamed file successfully`);
+          await readDirectory(currentPath);
+        } else {
+          setSearchStatus(`Failed to rename: ${result.error}`);
+        }
+      } catch (error) {
+        setSearchStatus(`Rename failed: ${error}`);
+      }
+      setIsRenaming(null);
+      setNewFileName('');
+    }
+  }, [isRenaming, newFileName, currentPath, readDirectory]);
+
+  const handleRenameCancel = useCallback(() => {
+    setIsRenaming(null);
+    setNewFileName('');
+  }, []);
 
   // AI command processing
   const handleCommand = useCallback(async (command: string) => {
@@ -419,6 +502,59 @@ const App: React.FC = () => {
               <span className="text-sm font-medium text-gray-700">📁 New</span>
               <span className="text-gray-400">+</span>
             </button>
+            
+            {/* Quick Action Buttons */}
+            <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+              <button 
+                onClick={handleCopy}
+                disabled={selectedFiles.length === 0}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  selectedFiles.length === 0
+                    ? 'opacity-30 cursor-not-allowed text-gray-400'
+                    : 'hover:bg-blue-50 hover:text-blue-600 text-gray-600 hover:shadow-sm'
+                }`}
+                title="Copy selected files"
+              >
+                📋 Copy
+              </button>
+              <button 
+                onClick={handleCut}
+                disabled={selectedFiles.length === 0}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  selectedFiles.length === 0
+                    ? 'opacity-30 cursor-not-allowed text-gray-400'
+                    : 'hover:bg-orange-50 hover:text-orange-600 text-gray-600 hover:shadow-sm'
+                }`}
+                title="Cut selected files"
+              >
+                ✂️ Cut
+              </button>
+              <button 
+                onClick={handlePaste}
+                disabled={clipboardFiles.length === 0}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  clipboardFiles.length === 0
+                    ? 'opacity-30 cursor-not-allowed text-gray-400'
+                    : 'hover:bg-green-50 hover:text-green-600 text-gray-600 hover:shadow-sm'
+                }`}
+                title={`Paste ${clipboardFiles.length} item(s)`}
+              >
+                📁 Paste
+              </button>
+              <div className="w-px h-6 bg-gray-200"></div>
+              <button 
+                onClick={handleDelete}
+                disabled={selectedFiles.length === 0}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  selectedFiles.length === 0
+                    ? 'opacity-30 cursor-not-allowed text-gray-400'
+                    : 'hover:bg-red-50 hover:text-red-600 text-gray-600 hover:shadow-sm'
+                }`}
+                title="Delete selected files"
+              >
+                🗑️ Delete
+              </button>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
@@ -597,6 +733,12 @@ const App: React.FC = () => {
               onFolderNavigate={handleFolderNavigation}
               viewMode={viewMode}
               onAddBookmark={handleAddBookmark}
+              isRenaming={isRenaming}
+              newFileName={newFileName}
+              onRename={handleRename}
+              onRenameConfirm={handleRenameConfirm}
+              onRenameCancel={handleRenameCancel}
+              onNewFileNameChange={setNewFileName}
             />
           </div>
           

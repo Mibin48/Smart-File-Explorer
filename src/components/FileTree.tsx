@@ -17,6 +17,25 @@ interface TreeNode {
 
 export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, userDirectories }) => {
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
+  const [drives, setDrives] = useState<string[]>([]);
+
+  // Load available drives on component mount
+  useEffect(() => {
+    const loadDrives = async () => {
+      try {
+        const availableDrives = await (window as any).electronAPI.getDrives();
+        if (availableDrives && Array.isArray(availableDrives)) {
+          setDrives(availableDrives);
+        }
+      } catch (error) {
+        console.error('Failed to load drives:', error);
+        // Fallback to C: drive if API fails
+        setDrives(['C:\\']);
+      }
+    };
+    
+    loadDrives();
+  }, []);
 
   useEffect(() => {
     if (!userDirectories) return;
@@ -77,19 +96,26 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
           expanded: false,
           childrenLoaded: false,
         },
+        // Add separator
         {
-          name: '💿 Local Disk (C:)',
-          path: 'C:\\',
+          name: 'Drives',
+          path: 'separator-drives',
+          isDirectory: false,
+        },
+        // Add all detected drives dynamically
+        ...drives.map(drive => ({
+          name: `💿 Local Disk (${drive.replace(':\\', ':')})`,
+          path: drive,
           isDirectory: true,
           expanded: false,
           childrenLoaded: false,
-        },
+        })),
       ];
       setTreeData(initialTree);
     };
     
     initializeTree();
-  }, [userDirectories]);
+  }, [userDirectories, drives]);
   
   // Helper function to get appropriate icons for directory names
   const getDirectoryIcon = (dirName: string): string => {

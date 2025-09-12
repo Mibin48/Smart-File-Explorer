@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDir: (path) => ipcRenderer.invoke('read-dir', path),
   searchFiles: (query, searchPath) => ipcRenderer.invoke('search-files', query, searchPath),
   fileOperation: (operation, files, destination) => ipcRenderer.invoke('file-operation', operation, files, destination),
+  renameFile: (oldPath, newName) => ipcRenderer.invoke('rename-file', oldPath, newName),
   createItem: (itemType, parentPath, itemName) => ipcRenderer.invoke('create-item', itemType, parentPath, itemName),
   createItemEnhanced: (itemType, parentPath, itemName, templateData) => ipcRenderer.invoke('create-item-enhanced', itemType, parentPath, itemName, templateData),
   

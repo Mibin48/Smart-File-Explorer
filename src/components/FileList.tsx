@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { formatFileSize } from '../utils/formatUtils';
 
 interface FileItem {
   name: string;
   type: string;
   modified: string;
   size: string;
+  sizeInBytes?: number;
   isDirectory: boolean;
   fullPath: string;
 }
@@ -19,6 +21,12 @@ interface FileListProps {
   onFolderNavigate?: (folderPath: string) => void;
   viewMode?: 'list' | 'grid' | 'thumbnail';
   onAddBookmark?: (name: string, path: string, type: 'folder' | 'file') => void;
+  isRenaming?: string | null;
+  newFileName?: string;
+  onRename?: (filePath: string, currentName: string) => void;
+  onRenameConfirm?: () => void;
+  onRenameCancel?: () => void;
+  onNewFileNameChange?: (name: string) => void;
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -31,6 +39,12 @@ export const FileList: React.FC<FileListProps> = ({
   onFolderNavigate,
   viewMode = 'list',
   onAddBookmark,
+  isRenaming,
+  newFileName,
+  onRename,
+  onRenameConfirm,
+  onRenameCancel,
+  onNewFileNameChange,
 }) => {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [keyboardMode, setKeyboardMode] = useState<boolean>(false);
@@ -407,7 +421,22 @@ export const FileList: React.FC<FileListProps> = ({
                 >
                   <div className="col-span-6 flex items-center">
                     <div className="flex-shrink-0 mr-3">{getFileIcon(file)}</div>
-                    <span className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-700 transition-colors duration-200">{file.name}</span>
+                    {isRenaming === file.fullPath ? (
+                      <input
+                        type="text"
+                        value={newFileName || ''}
+                        onChange={(e) => onNewFileNameChange?.(e.target.value)}
+                        onBlur={onRenameConfirm}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') onRenameConfirm?.();
+                          if (e.key === 'Escape') onRenameCancel?.();
+                        }}
+                        className="text-sm font-medium bg-white border border-blue-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-700 transition-colors duration-200">{file.name}</span>
+                    )}
                   </div>
                   <div className="col-span-3 flex items-center text-xs text-gray-500">
                     {file.modified}
@@ -416,7 +445,7 @@ export const FileList: React.FC<FileListProps> = ({
                     {file.type}
                   </div>
                   <div className="col-span-1 flex items-center text-xs text-gray-500 relative">
-                    {file.size}
+                    {file.isDirectory ? '' : (file.sizeInBytes ? formatFileSize(file.sizeInBytes) : file.size)}
                     {/* Selection checkbox */}
                     <button
                       onClick={(e) => handleFileSelect(file, e)}
@@ -462,7 +491,7 @@ export const FileList: React.FC<FileListProps> = ({
                     </div>
                     <span className="text-sm font-medium text-gray-800 truncate w-full group-hover:text-blue-700 transition-colors duration-200">{file.name}</span>
                     <div className="text-xs text-gray-500 mt-1 font-medium">
-                      {file.isDirectory ? 'Folder' : file.size}
+                      {file.isDirectory ? 'Folder' : (file.sizeInBytes ? formatFileSize(file.sizeInBytes) : file.size)}
                     </div>
                     <button
                       onClick={(e) => handleFileSelect(file, e)}
@@ -502,6 +531,16 @@ export const FileList: React.FC<FileListProps> = ({
           >
             <span>⭐</span>
             <span>Add to Bookmarks</span>
+          </button>
+          <button
+            onClick={() => {
+              onRename?.(contextMenu.file.fullPath, contextMenu.file.name);
+              setContextMenu(null);
+            }}
+            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2 text-sm"
+          >
+            <span>✏️</span>
+            <span>Rename</span>
           </button>
           <button
             onClick={() => {
