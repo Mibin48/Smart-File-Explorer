@@ -23,14 +23,21 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
   useEffect(() => {
     const loadDrives = async () => {
       try {
+        console.log('Loading drives...');
         const availableDrives = await (window as any).electronAPI.getDrives();
-        if (availableDrives && Array.isArray(availableDrives)) {
+        console.log('Received drives from API:', availableDrives);
+        
+        if (availableDrives && Array.isArray(availableDrives) && availableDrives.length > 0) {
           setDrives(availableDrives);
+          console.log('Set drives:', availableDrives);
+        } else {
+          console.warn('No drives returned from API, using fallback');
+          setDrives(['C:\\']);
         }
       } catch (error) {
         console.error('Failed to load drives:', error);
-        // Fallback to C: drive if API fails
-        setDrives(['C:\\']);
+        // Fallback to common Windows drives
+        setDrives(['C:\\', 'D:\\']);
       }
     };
     
@@ -103,13 +110,19 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
           isDirectory: false,
         },
         // Add all detected drives dynamically
-        ...drives.map(drive => ({
-          name: `💿 Local Disk (${drive.replace(':\\', ':')})`,
-          path: drive,
-          isDirectory: true,
-          expanded: false,
-          childrenLoaded: false,
-        })),
+        ...drives.map((drive, index) => {
+          // Get drive letter for display
+          const driveLetter = drive.replace(':\\', ':');
+          const driveInfo = getDriveInfo(drive);
+          
+          return {
+            name: `${driveInfo.icon} ${driveInfo.label} (${driveLetter})`,
+            path: drive,
+            isDirectory: true,
+            expanded: false,
+            childrenLoaded: false,
+          };
+        }),
       ];
       setTreeData(initialTree);
     };
@@ -132,6 +145,29 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
     return '📁';
   };
 
+  // Helper function to get drive information
+  const getDriveInfo = (drivePath: string) => {
+    const driveLetter = drivePath.charAt(0).toUpperCase();
+    
+    // Common drive types and their typical purposes
+    switch (driveLetter) {
+      case 'C':
+        return { icon: '💾', label: 'System Drive' };
+      case 'D':
+        return { icon: '💿', label: 'Local Disk' };
+      case 'E':
+      case 'F':
+      case 'G':
+      case 'H':
+        return { icon: '💽', label: 'Local Disk' };
+      case 'A':
+      case 'B':
+        return { icon: '💾', label: 'Floppy Disk' };
+      default:
+        return { icon: '💿', label: 'Local Disk' };
+    }
+  };
+
   const toggleNode = async (node: TreeNode) => {
     // Skip separators
     if (node.path.startsWith('separator')) {
@@ -143,8 +179,23 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
       // If expanding and children haven't been loaded, load them dynamically
       if (node.expanded && !node.childrenLoaded) {
         try {
+          console.log(`Loading contents for: ${node.path}`);
           const result = await (window as any).electronAPI.readDir(node.path);
-          if (result && !result.error && Array.isArray(result)) {
+          
+          if (result && result.error) {
+            console.error(`Error reading directory ${node.path}:`, result.error);
+            // Add a placeholder child to indicate error
+            node.children = [{
+              name: `Cannot access ${node.name}`,
+              path: '',
+              isDirectory: false,
+              expanded: false,
+              childrenLoaded: true,
+              children: [],
+              isError: true
+            }];
+            node.childrenLoaded = true;
+          } else if (result && Array.isArray(result)) {
             // Filter to only show directories in the tree
             const subdirectories = result
               .filter((item: any) => item.isDirectory)
@@ -157,11 +208,16 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
                 children: undefined
               }));
             
+            console.log(`Loaded ${subdirectories.length} subdirectories for ${node.path}`);
             node.children = subdirectories;
+            node.childrenLoaded = true;
+          } else {
+            console.warn(`Unexpected result format for ${node.path}:`, result);
+            node.children = [];
             node.childrenLoaded = true;
           }
         } catch (err) {
-          console.error('Failed to load directory contents:', err);
+          console.error(`Failed to load directory contents for ${node.path}:`, err);
           node.children = [];
           node.childrenLoaded = true;
         }
@@ -182,15 +238,21 @@ export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, u
           className={`flex items-center py-2 px-3 rounded-md transition-all duration-200 ${
             isSeparator
               ? 'cursor-default text-gray-400 text-xs font-medium border-b border-gray-200 mb-1 bg-transparent'
+              : (node as any).isError
+              ? 'text-red-500 cursor-not-allowed opacity-75 bg-red-50 hover:bg-red-50'
               : currentPath === node.path 
               ? 'bg-blue-500 text-white shadow-md cursor-pointer transform scale-[1.02]' 
               : 'hover:bg-white hover:shadow-sm cursor-pointer text-gray-700 hover:text-gray-900'
           }`}
           style={{ paddingLeft: `${paddingLeft + 12}px`, marginLeft: `${level * 4}px` }}
-          onClick={() => !isSeparator && toggleNode(node)}
-          title={isSeparator ? '' : `Click to select: ${node.path}`}
+          onClick={() => !isSeparator && !(node as any).isError && toggleNode(node)}
+          title={isSeparator ? '' : (node as any).isError ? 'Access denied' : `Click to select: ${node.path}`}
         >
-          {!isSeparator && node.isDirectory ? (
+          {(node as any).isError ? (
+            <svg className="w-4 h-4 mr-3 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          ) : !isSeparator && node.isDirectory ? (
             <svg
               className={`w-4 h-4 mr-3 transition-transform duration-200 ${
                 node.expanded ? 'rotate-90' : ''

@@ -688,26 +688,79 @@ ipcMain.handle('get-app-path', async () => {
 ipcMain.handle('get-drives', async () => {
   try {
     const drives = [];
-    // Check common drive letters
-    const possibleDrives = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
     
-    for (const letter of possibleDrives) {
-      const drivePath = `${letter}:\\`;
+    if (process.platform === 'win32') {
+      // Use Windows-specific approach
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      
       try {
-        // Try to access the drive to see if it exists
-        const stats = await fs.stat(drivePath);
-        if (stats.isDirectory()) {
-          drives.push(drivePath);
+        // Use wmic to get logical drives
+        const { stdout } = await execAsync('wmic logicaldisk get size,freespace,caption');
+        const lines = stdout.split('\n').filter(line => line.trim() && !line.includes('Caption'));
+        
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length >= 3) {
+            const caption = parts[0];
+            if (caption && caption.match(/^[A-Z]:$/)) {
+              drives.push(caption + '\\');
+            }
+          }
         }
-      } catch (err) {
-        // Drive doesn't exist or is not accessible, skip it
+        
+        console.log('Detected drives using wmic:', drives);
+      } catch (wmicError) {
+        console.warn('WMIC failed, trying alternative method:', wmicError.message);
+        
+        // Fallback: Use PowerShell to get drives
+        try {
+          const { stdout } = await execAsync('powershell "Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID | Format-Table -HideTableHeaders"');
+          const lines = stdout.split('\n').filter(line => line.trim());
+          
+          for (const line of lines) {
+            const driveId = line.trim();
+            if (driveId && driveId.match(/^[A-Z]:$/)) {
+              drives.push(driveId + '\\');
+            }
+          }
+          
+          console.log('Detected drives using PowerShell:', drives);
+        } catch (psError) {
+          console.warn('PowerShell failed, using manual detection:', psError.message);
+          
+          // Final fallback: manually check common drive letters
+          const possibleDrives = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+          
+          for (const letter of possibleDrives) {
+            const drivePath = `${letter}:\\`;
+            try {
+              // Try to list directory contents instead of just stat
+              await fs.readdir(drivePath);
+              drives.push(drivePath);
+              console.log(`Drive ${drivePath} is accessible`);
+            } catch (err) {
+              // Drive doesn't exist or is not accessible, skip it
+            }
+          }
+        }
       }
+    } else {
+      // For non-Windows systems, return root
+      drives.push('/');
     }
     
+    // Ensure we always return at least the C: drive on Windows
+    if (drives.length === 0 && process.platform === 'win32') {
+      drives.push('C:\\');
+    }
+    
+    console.log('Final detected drives:', drives);
     return drives;
   } catch (err) {
     console.error('Failed to get drives:', err);
-    return ['C:\\']; // Fallback to C: drive
+    return process.platform === 'win32' ? ['C:\\'] : ['/'];
   }
 });
 
