@@ -8,6 +8,9 @@ import { NewItemDialog } from './components/NewItemDialog';
 import { BookmarkDialog } from './components/BookmarkDialog';
 import { ContextualActionsPanel } from './components/ContextualActionsPanel';
 import { ActionHistoryPanel } from './components/ActionHistoryPanel';
+import { EnhancedChatPanel } from './components/EnhancedChatPanel';
+import { getConversationalAIService } from './services/ConversationalAIService';
+import { ConversationalCommandExecutor, FileSystemAPI } from './services/ConversationalCommandExecutor';
 import { useFileSystem } from './hooks/useFileSystem';
 import { createCommandProcessor, AICommand } from './commands/aiCommands';
 import { AdvancedAIService, FileAnalysis } from './services/AdvancedAIService';
@@ -77,6 +80,10 @@ const App: React.FC = () => {
   const [selectedFileForActions, setSelectedFileForActions] = useState<ContextualFileInfo | null>(null);
   const [isActionHistoryOpen, setIsActionHistoryOpen] = useState(false);
   
+  // Conversational AI state
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [conversationalCommandExecutor, setConversationalCommandExecutor] = useState<ConversationalCommandExecutor | null>(null);
+  
   // Settings
   const [settingsService] = useState(() => getSettingsService());
   const [appSettings, setAppSettings] = useState<AppSettings>(settingsService.getSettings());
@@ -131,6 +138,50 @@ const App: React.FC = () => {
           
           const contextualService = new ContextualActionsService(apiKey);
           setContextualActionsService(contextualService);
+          
+          // Initialize conversational AI services
+          const conversationalAI = getConversationalAIService();
+          conversationalAI.setApiKey(apiKey);
+          
+          // Create file system API adapter
+          const fileSystemAPI: FileSystemAPI = {
+            readDirectory: async (path: string) => {
+              await readDirectory(path);
+              return files;
+            },
+            searchFiles: async (params: any, basePath: string) => {
+              await searchFiles(params, basePath);
+              return files;
+            },
+            executeFileOperation: async (operation: string, targetFiles: string[], destination?: string) => {
+              return await executeFileOperation(operation, targetFiles, destination);
+            },
+            openFile: async (filePath: string) => {
+              await (window as any).electronAPI.openFile(filePath);
+            },
+            renameFile: async (filePath: string, newName: string) => {
+              return await (window as any).electronAPI.renameFile(filePath, newName);
+            },
+            createFolder: async (path: string, name: string) => {
+              try {
+                const result = await (window as any).electronAPI.createFolder(path, name);
+                return { success: true };
+              } catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+              }
+            },
+            createFile: async (path: string, name: string, content?: string) => {
+              try {
+                const result = await (window as any).electronAPI.createFile(path, name, content || '');
+                return { success: true };
+              } catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+              }
+            }
+          };
+          
+          const commandExecutor = new ConversationalCommandExecutor(fileSystemAPI);
+          setConversationalCommandExecutor(commandExecutor);
         } catch (err) {
           console.warn('Failed to initialize AI processor:', err);
         }
@@ -411,12 +462,32 @@ const App: React.FC = () => {
       readDirectory(currentPath);
     }
   }, [readDirectory, currentPath]);
+  
+  // Conversational AI command execution handler
+  const handleExecuteConversationalCommand = useCallback(async (command: any) => {
+    if (!conversationalCommandExecutor) {
+      throw new Error('Conversational command executor not initialized');
+    }
+    
+    // Update executor context with current app state
+    conversationalCommandExecutor.setContext(currentPath, selectedFiles);
+    
+    // Execute the command
+    const result = await conversationalCommandExecutor.executeCommand(command);
+    
+    // Refresh file list if needed
+    if (result.success && ['list', 'search', 'delete', 'move', 'copy', 'rename', 'create', 'organize'].includes(command.action)) {
+      setTimeout(() => readDirectory(currentPath), 500);
+    }
+    
+    return result;
+  }, [conversationalCommandExecutor, currentPath, selectedFiles, readDirectory]);
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-white">
+    <div className="h-screen w-screen flex flex-col bg-white overflow-hidden">
       
       {/* Modern Ribbon-style Toolbar */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-4 py-2 shadow-lg border-b border-blue-500">
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-4 py-1.5 shadow-lg border-b border-blue-500 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
@@ -445,7 +516,7 @@ const App: React.FC = () => {
       </div>
       
       {/* Enhanced Breadcrumb Navigation */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+      <div className="bg-white border-b border-gray-200 px-4 py-2 shadow-sm flex-shrink-0">
         <div className="flex items-center space-x-1 text-sm">
           <button className="flex items-center space-x-1 px-2 py-1 hover:bg-gray-200 rounded">
             <span>🏠</span>
@@ -490,38 +561,39 @@ const App: React.FC = () => {
         </div>
       </div>
       
-      {/* Enhanced Navigation and Action Buttons */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-4 py-3 shadow-sm">
-        <div className="flex items-center justify-between">
+      {/* Beautiful Modern Toolbar */}
+      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-200/70 px-6 py-4 shadow-lg backdrop-blur-sm flex-shrink-0">
+        <div className="flex items-center justify-between space-x-4">
+          {/* Left Side: Navigation Controls */}
           <div className="flex items-center space-x-3">
-            <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+            <div className="flex items-center bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 p-1 hover:shadow-xl transition-all duration-300">
               <button 
-                className={`p-2 rounded-md transition-all duration-200 ${
+                className={`p-2 rounded-lg transition-all duration-300 transform hover:scale-110 ${
                   currentHistoryIndex <= 0 
-                    ? 'opacity-30 cursor-not-allowed text-gray-400' 
-                    : 'hover:bg-blue-50 hover:text-blue-600 text-gray-600 hover:shadow-sm'
+                    ? 'opacity-40 cursor-not-allowed text-slate-400' 
+                    : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600 text-slate-600 hover:shadow-md'
                 }`} 
                 title="Back"
                 onClick={navigateBack}
                 disabled={currentHistoryIndex <= 0}
               >
-                <span className="text-lg">←</span>
+                <span className="text-base font-semibold">←</span>
               </button>
               <button 
-                className={`p-2 rounded-md transition-all duration-200 ${
+                className={`p-2 rounded-lg transition-all duration-300 transform hover:scale-110 ${
                   currentHistoryIndex >= navigationHistory.length - 1 
-                    ? 'opacity-30 cursor-not-allowed text-gray-400' 
-                    : 'hover:bg-blue-50 hover:text-blue-600 text-gray-600 hover:shadow-sm'
+                    ? 'opacity-40 cursor-not-allowed text-slate-400' 
+                    : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600 text-slate-600 hover:shadow-md'
                 }`} 
                 title="Forward"
                 onClick={navigateForward}
                 disabled={currentHistoryIndex >= navigationHistory.length - 1}
               >
-                <span className="text-lg">→</span>
+                <span className="text-base font-semibold">→</span>
               </button>
-              <div className="w-px h-6 bg-gray-200"></div>
+              <div className="w-px h-5 bg-gradient-to-b from-transparent via-slate-300 to-transparent mx-1"></div>
               <button 
-                className="p-2 rounded-md hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition-all duration-200 hover:shadow-sm" 
+                className="p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600 text-slate-600 transition-all duration-300 hover:shadow-md transform hover:scale-110" 
                 title="Up"
                 onClick={() => {
                   if (currentPath) {
@@ -532,10 +604,10 @@ const App: React.FC = () => {
                   }
                 }}
               >
-                <span className="text-lg">↑</span>
+                <span className="text-base font-semibold">↑</span>
               </button>
               <button 
-                className="p-2 rounded-md hover:bg-green-50 hover:text-green-600 text-gray-600 transition-all duration-200 hover:shadow-sm" 
+                className="p-2 rounded-lg hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 hover:text-emerald-600 text-slate-600 transition-all duration-300 hover:shadow-md transform hover:scale-110" 
                 title="Refresh"
                 onClick={() => {
                   if (currentPath) {
@@ -543,148 +615,164 @@ const App: React.FC = () => {
                   }
                 }}
               >
-                <span className="text-lg">🔄</span>
+                <span className="text-base">🔄</span>
               </button>
             </div>
             <button 
               onClick={() => setIsNewItemDialogOpen(true)}
-              className="flex items-center space-x-2 bg-white rounded-lg shadow-sm border border-gray-200 px-3 py-2 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200"
+              className="flex items-center space-x-2 bg-gradient-to-r from-white to-slate-50 rounded-xl shadow-lg border border-slate-200/50 px-4 py-2.5 hover:shadow-xl hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 transition-all duration-300 transform hover:scale-105 text-sm font-medium"
             >
-              <span className="text-sm font-medium text-gray-700">📁 New</span>
-              <span className="text-gray-400">+</span>
+              <span className="text-slate-700">📁</span>
+              <span className="font-semibold text-slate-700">New</span>
+              <span className="text-slate-400 font-light">+</span>
             </button>
-            
-            {/* Quick Action Buttons */}
-            <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
-              <button 
-                onClick={handleCopy}
-                disabled={selectedFiles.length === 0}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  selectedFiles.length === 0
-                    ? 'opacity-30 cursor-not-allowed text-gray-400'
-                    : 'hover:bg-blue-50 hover:text-blue-600 text-gray-600 hover:shadow-sm'
-                }`}
-                title="Copy selected files"
-              >
-                📋 Copy
-              </button>
-              <button 
-                onClick={handleCut}
-                disabled={selectedFiles.length === 0}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  selectedFiles.length === 0
-                    ? 'opacity-30 cursor-not-allowed text-gray-400'
-                    : 'hover:bg-orange-50 hover:text-orange-600 text-gray-600 hover:shadow-sm'
-                }`}
-                title="Cut selected files"
-              >
-                ✂️ Cut
-              </button>
-              <button 
-                onClick={handlePaste}
-                disabled={clipboardFiles.length === 0}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  clipboardFiles.length === 0
-                    ? 'opacity-30 cursor-not-allowed text-gray-400'
-                    : 'hover:bg-green-50 hover:text-green-600 text-gray-600 hover:shadow-sm'
-                }`}
-                title={`Paste ${clipboardFiles.length} item(s)`}
-              >
-                📁 Paste
-              </button>
-              <div className="w-px h-6 bg-gray-200"></div>
-              <button 
-                onClick={handleDelete}
-                disabled={selectedFiles.length === 0}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  selectedFiles.length === 0
-                    ? 'opacity-30 cursor-not-allowed text-gray-400'
-                    : 'hover:bg-red-50 hover:text-red-600 text-gray-600 hover:shadow-sm'
-                }`}
-                title="Delete selected files"
-              >
-                🗑️ Delete
-              </button>
-            </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+          
+          {/* Center: Beautiful Action Buttons */}
+          <div className="flex items-center space-x-1.5">
+            {/* View Mode Buttons */}
+            <div className="flex items-center bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 p-1.5">
               <button 
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 ${
                   viewMode === 'list' 
-                    ? 'bg-blue-500 text-white shadow-sm transform scale-105' 
-                    : 'hover:bg-gray-50 text-gray-700 hover:text-blue-600'
-                }`}
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg scale-105' 
+                    : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 text-slate-700 hover:text-blue-600 hover:shadow-md'
+                } w-[54px] h-[36px] flex items-center justify-center`}
                 onClick={() => setViewMode('list')}
               >
                 📋 List
               </button>
               <button 
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 ${
                   viewMode === 'grid' 
-                    ? 'bg-blue-500 text-white shadow-sm transform scale-105' 
-                    : 'hover:bg-gray-50 text-gray-700 hover:text-blue-600'
-                }`}
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg scale-105' 
+                    : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 text-slate-700 hover:text-blue-600 hover:shadow-md'
+                } w-[54px] h-[36px] flex items-center justify-center`}
                 onClick={() => setViewMode('grid')}
               >
                 ⊞ Grid
               </button>
               <button 
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 ${
                   viewMode === 'thumbnail' 
-                    ? 'bg-blue-500 text-white shadow-sm transform scale-105' 
-                    : 'hover:bg-gray-50 text-gray-700 hover:text-blue-600'
-                }`}
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg scale-105' 
+                    : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 text-slate-700 hover:text-blue-600 hover:shadow-md'
+                } w-[76px] h-[36px] flex items-center justify-center`}
                 onClick={() => setViewMode('thumbnail')}
               >
                 🖼 Thumbnail
               </button>
             </div>
+            
+            {/* Elegant Separator */}
+            <div className="w-px h-7 bg-gradient-to-b from-transparent via-slate-300 to-transparent mx-2"></div>
+            
+            {/* Feature Buttons */}
             <button 
-              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+              className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 text-amber-900 px-3 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-110 active:scale-95 w-[80px] h-[36px] flex items-center justify-center backdrop-blur-sm"
               onClick={() => setIsBookmarkDialogOpen(true)}
             >
-              ⭐ Bookmarks ({bookmarks.length})
+              ⭐ Bookmarks
             </button>
             <button 
-              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+              className="bg-gradient-to-r from-purple-500 via-violet-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white px-3 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-110 active:scale-95 w-[76px] h-[36px] flex items-center justify-center backdrop-blur-sm"
               onClick={() => setUseAdvancedInput(!useAdvancedInput)}
             >
-              🧠 {useAdvancedInput ? 'Basic' : 'Smart'} AI
+              🧠 Smart AI
             </button>
             {contextualActionsService && (
               <button 
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+                className="bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-600 hover:to-green-700 text-white px-3 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-110 active:scale-95 w-[86px] h-[36px] flex items-center justify-center backdrop-blur-sm"
                 onClick={() => setIsContextualActionsOpen(!isContextualActionsOpen)}
               >
                 🤖 Smart Actions
               </button>
             )}
             <button 
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+              className="bg-gradient-to-r from-orange-500 via-red-400 to-orange-600 hover:from-orange-600 hover:to-red-500 text-white px-3 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-110 active:scale-95 w-[66px] h-[36px] flex items-center justify-center backdrop-blur-sm"
               onClick={() => setIsActionHistoryOpen(true)}
               title="View Action History"
             >
               📋 History
             </button>
             <button 
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95" 
+              className="bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-110 active:scale-95 w-[66px] h-[36px] flex items-center justify-center backdrop-blur-sm"
+              onClick={() => setIsChatOpen(true)}
+              title="Open AI Chat Assistant"
+            >
+              💬 Chat AI
+            </button>
+            <button 
+              className="bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 hover:from-blue-600 hover:to-cyan-700 text-white px-3 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-110 active:scale-95 w-[66px] h-[36px] flex items-center justify-center backdrop-blur-sm" 
               onClick={() => setIsSettingsOpen(true)}
             >
               ⚙️ Settings
             </button>
             <button 
-              className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95" 
+              className="bg-gradient-to-r from-slate-400 via-gray-500 to-slate-500 hover:from-slate-500 hover:to-gray-600 text-white px-3 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-110 active:scale-95 w-[34px] h-[36px] flex items-center justify-center backdrop-blur-sm" 
               onClick={() => setIsHelpOpen(true)}
             >
-              Help
+              ❓
+            </button>
+          </div>
+          
+          {/* Right Side: Elegant Quick Action Buttons */}
+          <div className="flex items-center bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 p-1 hover:shadow-xl transition-all duration-300">
+            <button 
+              onClick={handleCopy}
+              disabled={selectedFiles.length === 0}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 ${
+                selectedFiles.length === 0
+                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                  : 'hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600 text-slate-600 hover:shadow-md'
+              }`}
+              title="Copy selected files"
+            >
+              📋 Copy
+            </button>
+            <button 
+              onClick={handleCut}
+              disabled={selectedFiles.length === 0}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 ${
+                selectedFiles.length === 0
+                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                  : 'hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 hover:text-orange-600 text-slate-600 hover:shadow-md'
+              }`}
+              title="Cut selected files"
+            >
+              ✂️ Cut
+            </button>
+            <button 
+              onClick={handlePaste}
+              disabled={clipboardFiles.length === 0}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 ${
+                clipboardFiles.length === 0
+                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                  : 'hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 hover:text-emerald-600 text-slate-600 hover:shadow-md'
+              }`}
+              title={`Paste ${clipboardFiles.length} item(s)`}
+            >
+              📁 Paste
+            </button>
+            <div className="w-px h-5 bg-gradient-to-b from-transparent via-slate-300 to-transparent mx-1"></div>
+            <button 
+              onClick={handleDelete}
+              disabled={selectedFiles.length === 0}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 ${
+                selectedFiles.length === 0
+                  ? 'opacity-40 cursor-not-allowed text-slate-400'
+                  : 'hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 hover:text-red-600 text-slate-600 hover:shadow-md'
+              }`}
+              title="Delete selected files"
+            >
+              🗑️ Delete
             </button>
           </div>
         </div>
       </div>
 
       {/* Enhanced Search Bar */}
-      <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 px-4 py-4 shadow-sm">
+      <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 px-4 py-2 shadow-sm flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="flex-1 relative">
             <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -737,7 +825,7 @@ const App: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Enhanced Sidebar */}
         <div className="w-64 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 overflow-hidden flex flex-col shadow-sm">
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-4 py-3">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-4 py-2 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -757,7 +845,7 @@ const App: React.FC = () => {
           </div>
           
           {/* Directory Tree */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-2">
               <div className="text-xs text-gray-500 mb-2">Directories</div>
               <FileTree currentPath={currentPath} onPathChange={handlePathChange} userDirectories={userDirectories} />
@@ -766,9 +854,9 @@ const App: React.FC = () => {
         </div>
 
         {/* Enhanced File List Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white shadow-sm">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white shadow-sm min-h-0">
           {/* Modern File List Header */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-3 shadow-sm">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-2 shadow-sm flex-shrink-0">
             <div className="grid grid-cols-12 text-xs font-semibold text-gray-700 uppercase tracking-wide">
               <div className="col-span-6 flex items-center space-x-2">
                 <span>Name</span>
@@ -788,7 +876,7 @@ const App: React.FC = () => {
           </div>
           
           {/* Enhanced File List Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             <FileList
               files={files}
               loading={loading}
@@ -810,7 +898,7 @@ const App: React.FC = () => {
           </div>
           
           {/* Enhanced Status Bar */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 px-6 py-3 flex justify-between items-center text-xs text-gray-600 shadow-sm">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 px-6 py-2 flex justify-between items-center text-xs text-gray-600 shadow-sm flex-shrink-0">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -898,6 +986,16 @@ const App: React.FC = () => {
       <ActionHistoryPanel
         isOpen={isActionHistoryOpen}
         onClose={() => setIsActionHistoryOpen(false)}
+      />
+      
+      {/* Enhanced Conversational Chat Panel */}
+      <EnhancedChatPanel
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        currentPath={currentPath}
+        selectedFiles={selectedFiles}
+        recentFiles={files.slice(0, 10).map(f => f.name)}
+        onExecuteCommand={handleExecuteConversationalCommand}
       />
     </div>
   );
