@@ -8,7 +8,7 @@ import { NewItemDialog } from './components/NewItemDialog';
 import { BookmarkDialog } from './components/BookmarkDialog';
 import { ContextualActionsPanel } from './components/ContextualActionsPanel';
 import { ActionHistoryPanel } from './components/ActionHistoryPanel';
-import { EnhancedChatPanel } from './components/EnhancedChatPanel';
+import { ConversationalChatPanel } from './components/ConversationalChatPanel';
 import { getConversationalAIService } from './services/ConversationalAIService';
 import { ConversationalCommandExecutor, FileSystemAPI } from './services/ConversationalCommandExecutor';
 import { useFileSystem } from './hooks/useFileSystem';
@@ -988,8 +988,8 @@ const App: React.FC = () => {
         onClose={() => setIsActionHistoryOpen(false)}
       />
       
-      {/* Enhanced Conversational Chat Panel */}
-      <EnhancedChatPanel
+      {/* Conversational Chat Panel */}
+      <ConversationalChatPanel
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         currentPath={currentPath}

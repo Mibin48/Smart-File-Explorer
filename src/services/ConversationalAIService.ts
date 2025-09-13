@@ -192,6 +192,16 @@ Examples:
   private parseCommandFallback(input: string): FileCommand {
     const lowercaseInput = input.toLowerCase();
     
+    // Handle file information requests
+    if (lowercaseInput.includes('information') || lowercaseInput.includes('info') || lowercaseInput.includes('details') || lowercaseInput.includes('about')) {
+      const fileName = this.extractFileName(input);
+      return {
+        action: 'info',
+        target: fileName || this.extractTarget(input),
+        confidence: fileName ? 0.9 : 0.6
+      };
+    }
+    
     // Simple pattern matching for common commands
     if (lowercaseInput.includes('list') || lowercaseInput.includes('show') || lowercaseInput.includes('display')) {
       return {
@@ -284,9 +294,25 @@ Examples:
     };
   }
 
+  private extractFileName(input: string): string | undefined {
+    // Look for file names with extensions
+    const filePattern = /([a-zA-Z0-9_.-]+\.[a-zA-Z0-9]{1,5})/g;
+    const matches = input.match(filePattern);
+    if (matches && matches.length > 0) {
+      // Return the first file name found
+      return matches[0];
+    }
+    
+    return undefined;
+  }
+
   private extractTarget(input: string): string | undefined {
     // Simple extraction logic - in a real implementation, this would be more sophisticated
     const words = input.split(' ');
+    
+    // First try to find a filename
+    const fileName = this.extractFileName(input);
+    if (fileName) return fileName;
     
     // Look for quoted strings
     const quoted = input.match(/"([^"]*)"/);
@@ -457,12 +483,31 @@ Keep it concise but informative.
       case 'open':
         content = `I'll open ${command.target || 'the specified file'}.`;
         break;
+      case 'info':
+        if (command.target) {
+          content = `I'll get information about "${command.target}". This would typically show:
+
+• File size and type
+• Creation and modification dates
+• File permissions
+• File location and path
+• Additional metadata if available
+
+Note: In the full version, I would retrieve actual file system information for ${command.target}.`;
+        } else {
+          content = `I can get file information for you! Please specify which file you'd like to know about. For example:
+• "Get info about document.pdf"
+• "Tell me about image.jpg"
+• "Show details for myfile.txt"`;
+        }
+        break;
       case 'help':
         content = `I can help you with file operations! Try commands like:
 • "Show me all images from last week"
 • "Delete the selected files"
 • "Move photos to Pictures folder"
 • "Find large files"
+• "Get information about file.pdf"
 • "Organize my downloads"
 • "Create a new folder called Projects"`;
         break;
