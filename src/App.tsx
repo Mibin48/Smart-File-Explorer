@@ -6,10 +6,14 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { HelpDialog } from './components/HelpDialog';
 import { NewItemDialog } from './components/NewItemDialog';
 import { BookmarkDialog } from './components/BookmarkDialog';
+import { ContextualActionsPanel } from './components/ContextualActionsPanel';
+import { ActionHistoryPanel } from './components/ActionHistoryPanel';
 import { useFileSystem } from './hooks/useFileSystem';
 import { createCommandProcessor, AICommand } from './commands/aiCommands';
 import { AdvancedAIService, FileAnalysis } from './services/AdvancedAIService';
 import { getSettingsService, AppSettings } from './services/SettingsService';
+import { ContextualActionsService } from './services/ContextualActionsService';
+import { FileInfo as ContextualFileInfo } from './types/ContextualActions';
 
 // Types
 interface Bookmark {
@@ -67,9 +71,25 @@ const App: React.FC = () => {
   const [lastSearchCommand, setLastSearchCommand] = useState<string>('');
   const [useAdvancedInput, setUseAdvancedInput] = useState(false);
   
+  // Contextual actions state
+  const [contextualActionsService, setContextualActionsService] = useState<ContextualActionsService | null>(null);
+  const [isContextualActionsOpen, setIsContextualActionsOpen] = useState(false);
+  const [selectedFileForActions, setSelectedFileForActions] = useState<ContextualFileInfo | null>(null);
+  const [isActionHistoryOpen, setIsActionHistoryOpen] = useState(false);
+  
   // Settings
   const [settingsService] = useState(() => getSettingsService());
   const [appSettings, setAppSettings] = useState<AppSettings>(settingsService.getSettings());
+  
+  // Update contextual actions service when API key changes
+  useEffect(() => {
+    if (appSettings.ai.openaiApiKey && contextualActionsService) {
+      contextualActionsService.setApiKey(appSettings.ai.openaiApiKey);
+    } else if (appSettings.ai.openaiApiKey && !contextualActionsService) {
+      const newService = new ContextualActionsService(appSettings.ai.openaiApiKey);
+      setContextualActionsService(newService);
+    }
+  }, [appSettings.ai.openaiApiKey, contextualActionsService]);
 
   // File system hook
   const { files, loading, error, readDirectory, searchFiles, executeFileOperation } = useFileSystem();
@@ -108,6 +128,9 @@ const App: React.FC = () => {
           
           const advancedService = new AdvancedAIService(apiKey);
           setAdvancedAIService(advancedService);
+          
+          const contextualService = new ContextualActionsService(apiKey);
+          setContextualActionsService(contextualService);
         } catch (err) {
           console.warn('Failed to initialize AI processor:', err);
         }
@@ -360,6 +383,34 @@ const App: React.FC = () => {
       setUseAdvancedInput(true);
     }
   }, []);
+  
+  // Contextual actions handlers
+  const handleShowContextualActions = useCallback((file: any) => {
+    if (!contextualActionsService) return;
+    
+    // Convert file object to ContextualFileInfo format
+    const fileInfo: ContextualFileInfo = {
+      name: file.name,
+      path: file.path || currentPath,
+      fullPath: file.fullPath || `${currentPath}\\${file.name}`,
+      size: file.size || 0,
+      isDirectory: file.isDirectory || false,
+      extension: file.extension || '',
+      lastModified: file.lastModified || new Date(),
+      content: file.content
+    };
+    
+    setSelectedFileForActions(fileInfo);
+    setIsContextualActionsOpen(true);
+  }, [contextualActionsService, currentPath]);
+  
+  const handleContextualActionExecuted = useCallback((result: any) => {
+    console.log('Action executed:', result);
+    // Refresh the file list if needed
+    if (result.success && (result.actionId.includes('move') || result.actionId.includes('rename') || result.actionId.includes('delete'))) {
+      readDirectory(currentPath);
+    }
+  }, [readDirectory, currentPath]);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-white">
@@ -601,6 +652,21 @@ const App: React.FC = () => {
             >
               🧠 {useAdvancedInput ? 'Basic' : 'Smart'} AI
             </button>
+            {contextualActionsService && (
+              <button 
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+                onClick={() => setIsContextualActionsOpen(!isContextualActionsOpen)}
+              >
+                🤖 Smart Actions
+              </button>
+            )}
+            <button 
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
+              onClick={() => setIsActionHistoryOpen(true)}
+              title="View Action History"
+            >
+              📋 History
+            </button>
             <button 
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95" 
               onClick={() => setIsSettingsOpen(true)}
@@ -739,6 +805,7 @@ const App: React.FC = () => {
               onRenameConfirm={handleRenameConfirm}
               onRenameCancel={handleRenameCancel}
               onNewFileNameChange={setNewFileName}
+              onShowContextualActions={handleShowContextualActions}
             />
           </div>
           
@@ -808,6 +875,29 @@ const App: React.FC = () => {
         onNavigate={handlePathChange}
         onOpenFile={handleOpenFile}
         currentPath={currentPath}
+      />
+      
+      {/* Contextual Actions Panel */}
+      {contextualActionsService && (
+        <div className={`fixed right-4 top-20 w-96 max-h-[80vh] z-40 transition-all duration-300 ${
+          isContextualActionsOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
+        }`}>
+          <ContextualActionsPanel
+            selectedFile={selectedFileForActions}
+            contextualActionsService={contextualActionsService}
+            onActionExecuted={handleContextualActionExecuted}
+            onClose={() => {
+              setIsContextualActionsOpen(false);
+              setSelectedFileForActions(null);
+            }}
+          />
+        </div>
+      )}
+      
+      {/* Action History Panel */}
+      <ActionHistoryPanel
+        isOpen={isActionHistoryOpen}
+        onClose={() => setIsActionHistoryOpen(false)}
       />
     </div>
   );

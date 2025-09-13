@@ -13,6 +13,7 @@ interface TreeNode {
   children?: TreeNode[];
   expanded?: boolean;
   childrenLoaded?: boolean;
+  isError?: boolean;
 }
 
 export const FileTree: React.FC<FileTreeProps> = ({ currentPath, onPathChange, userDirectories }) => {

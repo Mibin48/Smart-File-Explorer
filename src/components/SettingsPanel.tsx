@@ -194,133 +194,158 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             {/* AI Configuration Tab */}
             {activeTab === 'ai' && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">🤖 AI Configuration</h3>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🤖</span>
+                    AI Provider Configuration
+                  </h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        OpenAI API Key
-                        {!tempSettings.ai.openaiApiKey && <span className="text-red-500 ml-1">*</span>}
-                      </label>
-                      <input
-                        type="password"
-                        value={tempSettings.ai.openaiApiKey}
-                        onChange={(e) => {
-                          updateTempSettings('ai', { openaiApiKey: e.target.value });
-                          validateField('apiKey', e.target.value);
-                        }}
-                        placeholder="sk-..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Get your API key from <a href="https://platform.openai.com/" className="text-blue-500">platform.openai.com</a>
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
-                        <select
-                          value={tempSettings.ai.model}
-                          onChange={(e) => updateTempSettings('ai', { model: e.target.value as AISettings['model'] })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="gpt-4-turbo-preview">GPT-4 Turbo (Recommended)</option>
-                          <option value="gpt-4">GPT-4</option>
-                          <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Max Tokens ({tempSettings.ai.maxTokens})
-                        </label>
-                        <input
-                          type="range"
-                          min="100"
-                          max="4000"
-                          value={tempSettings.ai.maxTokens}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            updateTempSettings('ai', { maxTokens: value });
-                            validateField('maxTokens', value, 100, 4000);
-                          }}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>100</span>
-                          <span>4000</span>
+                    {/* API Key Section */}
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-700">OpenAI API Configuration</h4>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          tempSettings.ai.openaiApiKey ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {tempSettings.ai.openaiApiKey ? '✓ Connected' : '⚠ Not Configured'}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Temperature ({tempSettings.ai.temperature})
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={tempSettings.ai.temperature}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            updateTempSettings('ai', { temperature: value });
-                            validateField('temperature', value, 0, 2);
-                          }}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>Focused (0)</span>
-                          <span>Creative (2)</span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Batch Size ({tempSettings.ai.batchSize})
-                        </label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="50"
-                          value={tempSettings.ai.batchSize}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            updateTempSettings('ai', { batchSize: value });
-                            validateField('batchSize', value, 1, 50);
-                          }}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>1</span>
-                          <span>50</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-700">AI Features</h4>
-                      {[
-                        { key: 'enableSemanticSearch', label: 'Enable Semantic Search', desc: 'Search by meaning using embeddings' },
-                        { key: 'enableFileAnalysis', label: 'Enable File Analysis', desc: 'AI-powered file content analysis' },
-                        { key: 'enableAdvancedFeatures', label: 'Enable Advanced Features', desc: 'Function calling and complex operations' }
-                      ].map(feature => (
-                        <label key={feature.key} className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={tempSettings.ai[feature.key as keyof AISettings] as boolean}
-                            onChange={(e) => updateTempSettings('ai', { [feature.key]: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">{feature.label}</div>
-                            <div className="text-xs text-gray-500">{feature.desc}</div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            API Key {!tempSettings.ai.openaiApiKey && <span className="text-red-500">*</span>}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              value={tempSettings.ai.openaiApiKey}
+                              onChange={(e) => {
+                                updateTempSettings('ai', { openaiApiKey: e.target.value });
+                                validateField('apiKey', e.target.value);
+                              }}
+                              placeholder="sk-proj-..."
+                              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              {tempSettings.ai.openaiApiKey ? (
+                                <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
                           </div>
-                        </label>
-                      ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Model Configuration */}
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                        <span className="text-purple-600 mr-2">⚙️</span>
+                        Model & Performance Settings
+                      </h4>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">AI Model</label>
+                          <select
+                            value={tempSettings.ai.model}
+                            onChange={(e) => updateTempSettings('ai', { model: e.target.value as AISettings['model'] })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                          >
+                            <option value="gpt-4-turbo-preview">🚀 GPT-4 Turbo (Recommended)</option>
+                            <option value="gpt-4">🧠 GPT-4 (Most Accurate)</option>
+                            <option value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo (Fastest)</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {tempSettings.ai.model === 'gpt-4-turbo-preview' && 'Best balance of speed and intelligence'}
+                            {tempSettings.ai.model === 'gpt-4' && 'Highest quality but slower responses'}
+                            {tempSettings.ai.model === 'gpt-3.5-turbo' && 'Fastest responses, good for simple tasks'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Max Tokens: {tempSettings.ai.maxTokens}
+                          </label>
+                          <input
+                            type="range"
+                            min="100"
+                            max="4000"
+                            step="100"
+                            value={tempSettings.ai.maxTokens}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              updateTempSettings('ai', { maxTokens: value });
+                              validateField('maxTokens', value, 100, 4000);
+                            }}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Higher values allow longer responses but cost more
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Features Configuration */}
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                        <span className="text-green-600 mr-2">✨</span>
+                        AI-Powered Features
+                      </h4>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="font-medium text-gray-700">Enable Advanced Features</label>
+                            <p className="text-sm text-gray-500">Contextual actions, smart suggestions, and file analysis</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={tempSettings.ai.enableAdvancedFeatures}
+                              onChange={(e) => updateTempSettings('ai', { enableAdvancedFeatures: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="font-medium text-gray-700">Smart File Analysis</label>
+                            <p className="text-sm text-gray-500">Analyze file content for better suggestions</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={tempSettings.ai.enableSmartAnalysis}
+                              onChange={(e) => updateTempSettings('ai', { enableSmartAnalysis: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="font-medium text-gray-700">Auto-Retry on Errors</label>
+                            <p className="text-sm text-gray-500">Automatically retry failed AI requests</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={tempSettings.ai.enableAutoRetry}
+                              onChange={(e) => updateTempSettings('ai', { enableAutoRetry: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -330,60 +355,178 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             {/* UI Settings Tab */}
             {activeTab === 'ui' && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 User Interface</h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="bg-pink-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <span className="bg-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🎨</span>
+                    Appearance & Interface
+                  </h3>
+                  
+                  {/* Theme Configuration */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-blue-600 mr-2">🌟</span>
+                      Theme Settings
+                    </h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Color Theme</label>
                         <select
                           value={tempSettings.ui.theme}
                           onChange={(e) => updateTempSettings('ui', { theme: e.target.value as UISettings['theme'] })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                         >
-                          <option value="auto">Auto (System)</option>
-                          <option value="light">Light</option>
-                          <option value="dark">Dark</option>
+                          <option value="auto">🌍 Auto (Follow System)</option>
+                          <option value="light">☀️ Light Theme</option>
+                          <option value="dark">🌙 Dark Theme</option>
                         </select>
                       </div>
-
+                      
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Default Search Mode</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
                         <select
-                          value={tempSettings.ui.defaultSearchMode}
-                          onChange={(e) => updateTempSettings('ui', { defaultSearchMode: e.target.value as UISettings['defaultSearchMode'] })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          value={tempSettings.ui.accentColor}
+                          onChange={(e) => updateTempSettings('ui', { accentColor: e.target.value as UISettings['accentColor'] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                         >
-                          <option value="basic">Basic Search</option>
-                          <option value="semantic">Semantic Search</option>
-                          <option value="advanced">Advanced AI</option>
+                          <option value="blue">🔵 Blue (Default)</option>
+                          <option value="purple">🔮 Purple</option>
+                          <option value="green">🟢 Green</option>
+                          <option value="orange">🟠 Orange</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">UI Density</label>
+                        <select
+                          value={tempSettings.ui.density}
+                          onChange={(e) => updateTempSettings('ui', { density: e.target.value as UISettings['density'] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          <option value="comfortable">📏 Comfortable</option>
+                          <option value="compact">📊 Compact</option>
+                          <option value="spacious">🗃 Spacious</option>
                         </select>
                       </div>
                     </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-700">Display Options</h4>
-                      {[
-                        { key: 'compactMode', label: 'Compact Mode', desc: 'Reduce spacing and use smaller elements' },
-                        { key: 'showFileIcons', label: 'Show File Icons', desc: 'Display icons for different file types' },
-                        { key: 'showDetailedView', label: 'Show Detailed View', desc: 'Display file size, date, and metadata' },
-                        { key: 'animationsEnabled', label: 'Enable Animations', desc: 'Smooth transitions and effects' },
-                        { key: 'showAdvancedOptionsByDefault', label: 'Show Advanced Options', desc: 'Display advanced tools by default' },
-                        { key: 'autoFocusSearchInput', label: 'Auto-focus Search Input', desc: 'Automatically focus search field on startup' }
-                      ].map(option => (
-                        <label key={option.key} className="flex items-center space-x-3 cursor-pointer">
+                  </div>
+                  
+                  {/* Display Options */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-purple-600 mr-2">🖼️</span>
+                      Display Options
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Show File Extensions</label>
+                          <p className="text-sm text-gray-500">Always display file extensions in lists</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={tempSettings.ui[option.key as keyof UISettings] as boolean}
-                            onChange={(e) => updateTempSettings('ui', { [option.key]: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked={tempSettings.ui.showFileExtensions}
+                            onChange={(e) => updateTempSettings('ui', { showFileExtensions: e.target.checked })}
+                            className="sr-only peer"
                           />
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">{option.label}</div>
-                            <div className="text-xs text-gray-500">{option.desc}</div>
-                          </div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
-                      ))}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Show Hidden Files</label>
+                          <p className="text-sm text-gray-500">Display files and folders that start with a dot</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.ui.showHiddenFiles}
+                            onChange={(e) => updateTempSettings('ui', { showHiddenFiles: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Show File Sizes</label>
+                          <p className="text-sm text-gray-500">Display file sizes in human-readable format</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.ui.showFileSizes}
+                            onChange={(e) => updateTempSettings('ui', { showFileSizes: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Enable Animations</label>
+                          <p className="text-sm text-gray-500">Smooth transitions and hover effects</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.ui.enableAnimations}
+                            onChange={(e) => updateTempSettings('ui', { enableAnimations: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Font & Size Settings */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-green-600 mr-2">🔤</span>
+                      Font & Size Settings
+                    </h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Size: {tempSettings.ui.fontSize}px
+                        </label>
+                        <input
+                          type="range"
+                          min="12"
+                          max="20"
+                          step="1"
+                          value={tempSettings.ui.fontSize}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            updateTempSettings('ui', { fontSize: value });
+                            validateField('fontSize', value, 12, 20);
+                          }}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>Small</span>
+                          <span>Normal</span>
+                          <span>Large</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
+                        <select
+                          value={tempSettings.ui.fontFamily}
+                          onChange={(e) => updateTempSettings('ui', { fontFamily: e.target.value as UISettings['fontFamily'] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          <option value="system">System Default</option>
+                          <option value="inter">Inter (Modern)</option>
+                          <option value="roboto">Roboto (Clean)</option>
+                          <option value="monospace">Monospace (Code)</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -393,92 +536,159 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             {/* File Operations Tab */}
             {activeTab === 'fileOps' && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">📁 File Operations</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-700">Safety Confirmations</h4>
-                      {[
-                        { key: 'confirmBeforeDelete', label: 'Confirm Before Delete', desc: 'Ask confirmation before deleting files' },
-                        { key: 'confirmBeforeMove', label: 'Confirm Before Move', desc: 'Ask confirmation before moving files' },
-                        { key: 'confirmBeforeBatchOps', label: 'Confirm Batch Operations', desc: 'Ask confirmation for operations on multiple files' },
-                        { key: 'showOperationPreview', label: 'Show Operation Preview', desc: 'Preview what will happen before executing' },
-                        { key: 'createBackupOnMove', label: 'Create Backup on Move', desc: 'Create backup before moving important files' }
-                      ].map(option => (
-                        <label key={option.key} className="flex items-center space-x-3 cursor-pointer">
+                <div className="bg-red-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <span className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🔒</span>
+                    Safety & File Operation Settings
+                  </h3>
+                  
+                  {/* Confirmation Settings */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-yellow-600 mr-2">⚠️</span>
+                      Confirmation Settings
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Confirm Delete Operations</label>
+                          <p className="text-sm text-gray-500">Ask for confirmation before deleting files</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={tempSettings.fileOperations[option.key as keyof FileOperationSettings] as boolean}
-                            onChange={(e) => updateTempSettings('fileOperations', { [option.key]: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked={tempSettings.fileOperations.confirmDelete}
+                            onChange={(e) => updateTempSettings('fileOperations', { confirmDelete: e.target.checked })}
+                            className="sr-only peer"
                           />
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">{option.label}</div>
-                            <div className="text-xs text-gray-500">{option.desc}</div>
-                          </div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Max Batch Size ({tempSettings.fileOperations.maxBatchSize})
-                        </label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="1000"
-                          value={tempSettings.fileOperations.maxBatchSize}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            updateTempSettings('fileOperations', { maxBatchSize: value });
-                            validateField('maxBatchSize', value, 1, 1000);
-                          }}
-                          className="w-full"
-                        />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Max Search Depth ({tempSettings.fileOperations.maxSearchDepth})
-                        </label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={tempSettings.fileOperations.maxSearchDepth}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            updateTempSettings('fileOperations', { maxSearchDepth: value });
-                            validateField('maxSearchDepth', value, 1, 10);
-                          }}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-700">Search Behavior</h4>
-                      {[
-                        { key: 'recursiveSearch', label: 'Recursive Search', desc: 'Search in subdirectories' },
-                        { key: 'followSymlinks', label: 'Follow Symbolic Links', desc: 'Follow symlinks during search' },
-                        { key: 'excludeHiddenFiles', label: 'Exclude Hidden Files', desc: 'Skip hidden files in results' },
-                        { key: 'excludeSystemFiles', label: 'Exclude System Files', desc: 'Skip system files in results' }
-                      ].map(option => (
-                        <label key={option.key} className="flex items-center space-x-3 cursor-pointer">
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Confirm Move Operations</label>
+                          <p className="text-sm text-gray-500">Ask for confirmation when moving files to different locations</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={tempSettings.fileOperations[option.key as keyof FileOperationSettings] as boolean}
-                            onChange={(e) => updateTempSettings('fileOperations', { [option.key]: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked={tempSettings.fileOperations.confirmMove}
+                            onChange={(e) => updateTempSettings('fileOperations', { confirmMove: e.target.checked })}
+                            className="sr-only peer"
                           />
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">{option.label}</div>
-                            <div className="text-xs text-gray-500">{option.desc}</div>
-                          </div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
-                      ))}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Confirm Batch Operations</label>
+                          <p className="text-sm text-gray-500">Ask for confirmation when operating on multiple files</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.fileOperations.confirmBatchOperations}
+                            onChange={(e) => updateTempSettings('fileOperations', { confirmBatchOperations: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Backup & Safety */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-green-600 mr-2">🛡️</span>
+                      Backup & Safety
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Use Recycle Bin</label>
+                          <p className="text-sm text-gray-500">Move deleted files to recycle bin instead of permanent deletion</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.fileOperations.useRecycleBin}
+                            onChange={(e) => updateTempSettings('fileOperations', { useRecycleBin: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Create Backups on Move</label>
+                          <p className="text-sm text-gray-500">Create backup copies when moving important files</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.fileOperations.createBackupOnMove}
+                            onChange={(e) => updateTempSettings('fileOperations', { createBackupOnMove: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Auto-Save File Changes</label>
+                          <p className="text-sm text-gray-500">Automatically save changes to files when possible</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.fileOperations.autoSave}
+                            onChange={(e) => updateTempSettings('fileOperations', { autoSave: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Default Behavior */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-blue-600 mr-2">⚙️</span>
+                      Default Behavior
+                    </h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Default File Action</label>
+                        <select
+                          value={tempSettings.fileOperations.defaultFileAction}
+                          onChange={(e) => updateTempSettings('fileOperations', { defaultFileAction: e.target.value as FileOperationSettings['defaultFileAction'] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          <option value="open">📄 Open File</option>
+                          <option value="preview">👁️ Preview File</option>
+                          <option value="select">✓ Select File</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Duplicate Handling</label>
+                        <select
+                          value={tempSettings.fileOperations.duplicateHandling}
+                          onChange={(e) => updateTempSettings('fileOperations', { duplicateHandling: e.target.value as FileOperationSettings['duplicateHandling'] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          <option value="ask">❓ Ask Every Time</option>
+                          <option value="rename">🏷️ Auto Rename</option>
+                          <option value="replace">🔄 Replace Existing</option>
+                          <option value="skip">⏭️ Skip Duplicates</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -488,13 +698,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             {/* Search Settings Tab */}
             {activeTab === 'search' && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">🔍 Search Settings</h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <span className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🔍</span>
+                    Search & Indexing Settings
+                  </h3>
+                  
+                  {/* Search Behavior */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-blue-600 mr-2">🎯</span>
+                      Search Behavior
+                    </h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Max Results ({tempSettings.search.maxResults})
+                          Max Results: {tempSettings.search.maxResults}
                         </label>
                         <input
                           type="range"
@@ -507,69 +726,161 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                             updateTempSettings('search', { maxResults: value });
                             validateField('maxResults', value, 10, 2000);
                           }}
-                          className="w-full"
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                         />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>10</span>
+                          <span>1000</span>
+                          <span>2000</span>
+                        </div>
                       </div>
-
+                      
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Search Timeout ({tempSettings.search.searchTimeout}s)
-                        </label>
-                        <input
-                          type="range"
-                          min="5"
-                          max="120"
-                          value={tempSettings.search.searchTimeout}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            updateTempSettings('search', { searchTimeout: value });
-                            validateField('searchTimeout', value, 5, 120);
-                          }}
-                          className="w-full"
-                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Search Mode</label>
+                        <select
+                          value={tempSettings.search.searchMode}
+                          onChange={(e) => updateTempSettings('search', { searchMode: e.target.value as SearchSettings['searchMode'] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          <option value="fuzzy">🎨 Fuzzy (Smart matching)</option>
+                          <option value="exact">🎯 Exact (Precise matching)</option>
+                          <option value="regex">🔧 Regex (Advanced patterns)</option>
+                        </select>
                       </div>
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max History Items ({tempSettings.search.maxHistoryItems})
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="200"
-                        value={tempSettings.search.maxHistoryItems}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          updateTempSettings('search', { maxHistoryItems: value });
-                          validateField('maxHistoryItems', value, 0, 200);
-                        }}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-700">Search Features</h4>
-                      {[
-                        { key: 'enableSearchHistory', label: 'Enable Search History', desc: 'Remember and suggest previous searches' },
-                        { key: 'enableSmartSuggestions', label: 'Enable Smart Suggestions', desc: 'AI-powered search suggestions' },
-                        { key: 'caseSensitiveSearch', label: 'Case Sensitive Search', desc: 'Distinguish between upper and lowercase' },
-                        { key: 'enableRegexSearch', label: 'Enable Regex Search', desc: 'Support regular expression patterns' },
-                        { key: 'autoSaveSearches', label: 'Auto-save Searches', desc: 'Automatically save search queries' }
-                      ].map(option => (
-                        <label key={option.key} className="flex items-center space-x-3 cursor-pointer">
+                  </div>
+                  
+                  {/* Search Options */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-purple-600 mr-2">⚙️</span>
+                      Search Options
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Case Sensitive Search</label>
+                          <p className="text-sm text-gray-500">Distinguish between uppercase and lowercase letters</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={tempSettings.search[option.key as keyof SearchSettings] as boolean}
-                            onChange={(e) => updateTempSettings('search', { [option.key]: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked={tempSettings.search.caseSensitive}
+                            onChange={(e) => updateTempSettings('search', { caseSensitive: e.target.checked })}
+                            className="sr-only peer"
                           />
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">{option.label}</div>
-                            <div className="text-xs text-gray-500">{option.desc}</div>
-                          </div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
-                      ))}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Include File Content</label>
+                          <p className="text-sm text-gray-500">Search inside text files, not just filenames</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.search.includeContent}
+                            onChange={(e) => updateTempSettings('search', { includeContent: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Include Hidden Files</label>
+                          <p className="text-sm text-gray-500">Search in hidden files and folders</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.search.includeHidden}
+                            onChange={(e) => updateTempSettings('search', { includeHidden: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Save Search History</label>
+                          <p className="text-sm text-gray-500">Remember previous searches for quick access</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.search.saveHistory}
+                            onChange={(e) => updateTempSettings('search', { saveHistory: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Indexing Settings */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-orange-600 mr-2">🗜</span>
+                      Indexing & Performance
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Enable File Indexing</label>
+                          <p className="text-sm text-gray-500">Build search index for faster results (uses more disk space)</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.search.enableIndexing}
+                            onChange={(e) => updateTempSettings('search', { enableIndexing: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            History Size: {tempSettings.search.historySize}
+                          </label>
+                          <input
+                            type="range"
+                            min="10"
+                            max="1000"
+                            step="10"
+                            value={tempSettings.search.historySize}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              updateTempSettings('search', { historySize: value });
+                              validateField('historySize', value, 10, 1000);
+                            }}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Number of searches to remember</p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Search Timeout (ms)</label>
+                          <select
+                            value={tempSettings.search.searchTimeout}
+                            onChange={(e) => updateTempSettings('search', { searchTimeout: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                          >
+                            <option value="1000">⚡ 1 second (Fast)</option>
+                            <option value="5000">⏱️ 5 seconds (Balanced)</option>
+                            <option value="10000">🕰️ 10 seconds (Thorough)</option>
+                            <option value="30000">🐢 30 seconds (Deep)</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -579,94 +890,238 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             {/* Advanced Settings Tab */}
             {activeTab === 'advanced' && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">⚙️ Advanced Settings</h3>
-                  <div className="space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                      <div className="flex items-center">
-                        <div className="text-yellow-600 mr-2">⚠️</div>
-                        <div className="text-sm text-yellow-800">
-                          These settings can affect app performance and stability. Change only if you know what you're doing.
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <span className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">⚙️</span>
+                    Advanced Performance & System Settings
+                  </h3>
+                  
+                  {/* Performance Settings */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-red-600 mr-2">🚀</span>
+                      Performance Optimization
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Enable File Caching</label>
+                          <p className="text-sm text-gray-500">Cache file information for faster loading (uses more RAM)</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.advanced.enableCaching}
+                            onChange={(e) => updateTempSettings('advanced', { enableCaching: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Enable GPU Acceleration</label>
+                          <p className="text-sm text-gray-500">Use hardware acceleration for thumbnails and previews</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.advanced.enableGPUAcceleration}
+                            onChange={(e) => updateTempSettings('advanced', { enableGPUAcceleration: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Cache Size (MB): {tempSettings.advanced.cacheSize}
+                          </label>
+                          <input
+                            type="range"
+                            min="50"
+                            max="2048"
+                            step="50"
+                            value={tempSettings.advanced.cacheSize}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              updateTempSettings('advanced', { cacheSize: value });
+                              validateField('cacheSize', value, 50, 2048);
+                            }}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>50MB</span>
+                            <span>1GB</span>
+                            <span>2GB</span>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Worker Threads: {tempSettings.advanced.workerThreads}
+                          </label>
+                          <input
+                            type="range"
+                            min="1"
+                            max="16"
+                            step="1"
+                            value={tempSettings.advanced.workerThreads}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              updateTempSettings('advanced', { workerThreads: value });
+                              validateField('workerThreads', value, 1, 16);
+                            }}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">More threads = faster processing, more CPU usage</p>
                         </div>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                  </div>
+                  
+                  {/* Debugging & Logging */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-yellow-600 mr-2">🐛</span>
+                      Debugging & Logging
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Enable Debug Mode</label>
+                          <p className="text-sm text-gray-500">Show detailed error messages and performance metrics</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.advanced.debugMode}
+                            onChange={(e) => updateTempSettings('advanced', { debugMode: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Verbose Logging</label>
+                          <p className="text-sm text-gray-500">Log detailed information about operations (larger log files)</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.advanced.verboseLogging}
+                            onChange={(e) => updateTempSettings('advanced', { verboseLogging: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Performance Monitoring</label>
+                          <p className="text-sm text-gray-500">Track and display performance metrics in real-time</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.advanced.performanceMonitoring}
+                            onChange={(e) => updateTempSettings('advanced', { performanceMonitoring: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Log Level</label>
                         <select
                           value={tempSettings.advanced.logLevel}
                           onChange={(e) => updateTempSettings('advanced', { logLevel: e.target.value as AdvancedSettings['logLevel'] })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                         >
-                          <option value="error">Error Only</option>
-                          <option value="warn">Warning & Error</option>
-                          <option value="info">Info, Warning & Error</option>
-                          <option value="debug">All (Debug Mode)</option>
+                          <option value="error">🔴 Error Only</option>
+                          <option value="warn">🟡 Warnings & Errors</option>
+                          <option value="info">🔵 Info, Warnings & Errors</option>
+                          <option value="debug">🔍 All Messages (Debug)</option>
                         </select>
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Cache Size ({tempSettings.advanced.cacheSize} MB)
-                        </label>
-                        <input
-                          type="range"
-                          min="10"
-                          max="1000"
-                          step="10"
-                          value={tempSettings.advanced.cacheSize}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            updateTempSettings('advanced', { cacheSize: value });
-                            validateField('cacheSize', value, 10, 1000);
-                          }}
-                          className="w-full"
-                        />
-                      </div>
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max Concurrent Operations ({tempSettings.advanced.maxConcurrentOperations})
-                      </label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="20"
-                        value={tempSettings.advanced.maxConcurrentOperations}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          updateTempSettings('advanced', { maxConcurrentOperations: value });
-                          validateField('maxConcurrentOperations', value, 1, 20);
-                        }}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-700">Advanced Features</h4>
-                      {[
-                        { key: 'enableLogging', label: 'Enable Logging', desc: 'Log application events for debugging' },
-                        { key: 'enablePerformanceMetrics', label: 'Enable Performance Metrics', desc: 'Track and display performance data' },
-                        { key: 'autoUpdates', label: 'Auto Updates', desc: 'Automatically check for and install updates' },
-                        { key: 'enableTelemetry', label: 'Enable Telemetry', desc: 'Send anonymous usage data to improve the app' },
-                        { key: 'experimentalFeatures', label: 'Experimental Features', desc: 'Enable beta features (may be unstable)' },
-                        { key: 'enableMemoryOptimization', label: 'Memory Optimization', desc: 'Optimize memory usage for better performance' }
-                      ].map(option => (
-                        <label key={option.key} className="flex items-center space-x-3 cursor-pointer">
+                  </div>
+                  
+                  {/* Security & Privacy */}
+                  <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-green-600 mr-2">🔐</span>
+                      Security & Privacy
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Enable Telemetry</label>
+                          <p className="text-sm text-gray-500">Send anonymous usage data to help improve the app</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={tempSettings.advanced[option.key as keyof AdvancedSettings] as boolean}
-                            onChange={(e) => updateTempSettings('advanced', { [option.key]: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked={tempSettings.advanced.enableTelemetry}
+                            onChange={(e) => updateTempSettings('advanced', { enableTelemetry: e.target.checked })}
+                            className="sr-only peer"
                           />
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">{option.label}</div>
-                            <div className="text-xs text-gray-500">{option.desc}</div>
-                          </div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
-                      ))}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">Check for Updates</label>
+                          <p className="text-sm text-gray-500">Automatically check for app updates on startup</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.advanced.autoUpdate}
+                            onChange={(e) => updateTempSettings('advanced', { autoUpdate: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Experimental Features */}
+                  <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                    <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                      <span className="text-orange-600 mr-2">⚠️</span>
+                      Experimental Features
+                    </h4>
+                    <div className="bg-yellow-100 rounded-md p-3 mb-4">
+                      <p className="text-sm text-yellow-800">
+                        <strong>Warning:</strong> These features are experimental and may cause instability. Use at your own risk.
+                      </p>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="font-medium text-gray-700">AI Batch Operations</label>
+                          <p className="text-sm text-gray-500">Use AI to perform operations on multiple files simultaneously</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={tempSettings.advanced.enableExperimentalFeatures}
+                            onChange={(e) => updateTempSettings('advanced', { enableExperimentalFeatures: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>

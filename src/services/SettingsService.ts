@@ -11,27 +11,40 @@ export interface AISettings {
   enableSemanticSearch: boolean;
   enableFileAnalysis: boolean;
   enableAdvancedFeatures: boolean;
+  enableSmartAnalysis: boolean;
+  enableAutoRetry: boolean;
   cacheDuration: number; // in minutes
   batchSize: number;
 }
 
 export interface UISettings {
   theme: 'light' | 'dark' | 'auto';
+  accentColor: 'blue' | 'purple' | 'green' | 'orange';
+  density: 'comfortable' | 'compact' | 'spacious';
+  fontSize: number;
+  fontFamily: 'system' | 'inter' | 'roboto' | 'monospace';
+  showFileExtensions: boolean;
+  showHiddenFiles: boolean;
+  showFileSizes: boolean;
+  enableAnimations: boolean;
   compactMode: boolean;
   showFileIcons: boolean;
   showDetailedView: boolean;
-  animationsEnabled: boolean;
   defaultSearchMode: 'basic' | 'semantic' | 'advanced';
   showAdvancedOptionsByDefault: boolean;
   autoFocusSearchInput: boolean;
 }
 
 export interface FileOperationSettings {
-  confirmBeforeDelete: boolean;
-  confirmBeforeMove: boolean;
-  confirmBeforeBatchOps: boolean;
-  maxBatchSize: number;
+  confirmDelete: boolean;
+  confirmMove: boolean;
+  confirmBatchOperations: boolean;
+  useRecycleBin: boolean;
   createBackupOnMove: boolean;
+  autoSave: boolean;
+  defaultFileAction: 'open' | 'preview' | 'select';
+  duplicateHandling: 'ask' | 'rename' | 'replace' | 'skip';
+  maxBatchSize: number;
   showOperationPreview: boolean;
   defaultDestination: string;
   recursiveSearch: boolean;
@@ -43,11 +56,15 @@ export interface FileOperationSettings {
 
 export interface SearchSettings {
   maxResults: number;
-  searchTimeout: number; // in seconds
-  enableSearchHistory: boolean;
-  maxHistoryItems: number;
+  searchTimeout: number; // in milliseconds
+  searchMode: 'fuzzy' | 'exact' | 'regex';
+  caseSensitive: boolean;
+  includeContent: boolean;
+  includeHidden: boolean;
+  saveHistory: boolean;
+  enableIndexing: boolean;
+  historySize: number;
   enableSmartSuggestions: boolean;
-  caseSensitiveSearch: boolean;
   enableRegexSearch: boolean;
   autoSaveSearches: boolean;
   defaultFilters: {
@@ -58,13 +75,17 @@ export interface SearchSettings {
 }
 
 export interface AdvancedSettings {
-  enableLogging: boolean;
-  logLevel: 'error' | 'warn' | 'info' | 'debug';
-  enablePerformanceMetrics: boolean;
-  autoUpdates: boolean;
-  enableTelemetry: boolean;
-  experimentalFeatures: boolean;
+  enableCaching: boolean;
+  enableGPUAcceleration: boolean;
   cacheSize: number; // in MB
+  workerThreads: number;
+  debugMode: boolean;
+  verboseLogging: boolean;
+  performanceMonitoring: boolean;
+  logLevel: 'error' | 'warn' | 'info' | 'debug';
+  enableTelemetry: boolean;
+  autoUpdate: boolean;
+  enableExperimentalFeatures: boolean;
   maxConcurrentOperations: number;
   enableMemoryOptimization: boolean;
 }
@@ -88,25 +109,38 @@ const DEFAULT_SETTINGS: AppSettings = {
     enableSemanticSearch: true,
     enableFileAnalysis: true,
     enableAdvancedFeatures: true,
+    enableSmartAnalysis: true,
+    enableAutoRetry: true,
     cacheDuration: 60,
     batchSize: 10
   },
   ui: {
     theme: 'auto',
+    accentColor: 'blue',
+    density: 'comfortable',
+    fontSize: 14,
+    fontFamily: 'system',
+    showFileExtensions: true,
+    showHiddenFiles: false,
+    showFileSizes: true,
+    enableAnimations: true,
     compactMode: false,
     showFileIcons: true,
     showDetailedView: true,
-    animationsEnabled: true,
     defaultSearchMode: 'basic',
     showAdvancedOptionsByDefault: false,
     autoFocusSearchInput: true
   },
   fileOperations: {
-    confirmBeforeDelete: true,
-    confirmBeforeMove: false,
-    confirmBeforeBatchOps: true,
-    maxBatchSize: 100,
+    confirmDelete: true,
+    confirmMove: false,
+    confirmBatchOperations: true,
+    useRecycleBin: true,
     createBackupOnMove: false,
+    autoSave: true,
+    defaultFileAction: 'open',
+    duplicateHandling: 'ask',
+    maxBatchSize: 100,
     showOperationPreview: true,
     defaultDestination: '',
     recursiveSearch: true,
@@ -117,11 +151,15 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   search: {
     maxResults: 500,
-    searchTimeout: 30,
-    enableSearchHistory: true,
-    maxHistoryItems: 50,
+    searchTimeout: 5000, // in milliseconds
+    searchMode: 'fuzzy',
+    caseSensitive: false,
+    includeContent: true,
+    includeHidden: false,
+    saveHistory: true,
+    enableIndexing: true,
+    historySize: 50,
     enableSmartSuggestions: true,
-    caseSensitiveSearch: false,
     enableRegexSearch: false,
     autoSaveSearches: true,
     defaultFilters: {
@@ -131,13 +169,17 @@ const DEFAULT_SETTINGS: AppSettings = {
     }
   },
   advanced: {
-    enableLogging: true,
+    enableCaching: true,
+    enableGPUAcceleration: false,
+    cacheSize: 256,
+    workerThreads: 4,
+    debugMode: false,
+    verboseLogging: false,
+    performanceMonitoring: false,
     logLevel: 'info',
-    enablePerformanceMetrics: false,
-    autoUpdates: true,
     enableTelemetry: false,
-    experimentalFeatures: false,
-    cacheSize: 100,
+    autoUpdate: true,
+    enableExperimentalFeatures: false,
     maxConcurrentOperations: 5,
     enableMemoryOptimization: true
   },
@@ -310,9 +352,9 @@ export class SettingsService {
 
   shouldConfirmOperation(operation: 'delete' | 'move' | 'batchOps'): boolean {
     switch (operation) {
-      case 'delete': return this.settings.fileOperations.confirmBeforeDelete;
-      case 'move': return this.settings.fileOperations.confirmBeforeMove;
-      case 'batchOps': return this.settings.fileOperations.confirmBeforeBatchOps;
+      case 'delete': return this.settings.fileOperations.confirmDelete;
+      case 'move': return this.settings.fileOperations.confirmMove;
+      case 'batchOps': return this.settings.fileOperations.confirmBatchOperations;
       default: return true;
     }
   }
@@ -369,7 +411,7 @@ export class SettingsService {
       // Validate search settings
       if (settings.search.maxResults < 1) return false;
       if (settings.search.searchTimeout < 1) return false;
-      if (settings.search.maxHistoryItems < 0) return false;
+      if (settings.search.historySize < 0) return false;
 
       // Validate advanced settings
       if (settings.advanced.cacheSize < 1) return false;

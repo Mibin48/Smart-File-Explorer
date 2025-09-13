@@ -27,6 +27,7 @@ interface FileListProps {
   onRenameConfirm?: () => void;
   onRenameCancel?: () => void;
   onNewFileNameChange?: (name: string) => void;
+  onShowContextualActions?: (file: FileItem) => void;
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -45,6 +46,7 @@ export const FileList: React.FC<FileListProps> = ({
   onRenameConfirm,
   onRenameCancel,
   onNewFileNameChange,
+  onShowContextualActions,
 }) => {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [keyboardMode, setKeyboardMode] = useState<boolean>(false);
@@ -542,6 +544,18 @@ export const FileList: React.FC<FileListProps> = ({
             <span>✏️</span>
             <span>Rename</span>
           </button>
+          {onShowContextualActions && (
+            <button
+              onClick={() => {
+                onShowContextualActions(contextMenu.file);
+                setContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left hover:bg-green-50 flex items-center space-x-2 text-sm"
+            >
+              <span>🤖</span>
+              <span>AI Actions</span>
+            </button>
+          )}
           <button
             onClick={() => {
               if (contextMenu.file.isDirectory && onFolderNavigate) {
